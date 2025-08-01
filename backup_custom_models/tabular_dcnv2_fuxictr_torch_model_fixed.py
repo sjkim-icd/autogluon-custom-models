@@ -1,38 +1,48 @@
-# [my_models] DCNv2 진입점
+# [my_models] FuxiCTR 스타일 DCNv2 진입점 - 원래 잘 작동하던 파일 기반
 
 from autogluon.tabular.models.tabular_nn.torch.tabular_nn_torch import TabularNeuralNetTorchModel
 from autogluon.common import space
 from autogluon.tabular.models.tabular_nn.hyperparameters.parameters import get_default_param
 from autogluon.tabular.models.tabular_nn.hyperparameters.searchspaces import get_default_searchspace
-from custom_models.dcnv2_block import DCNv2Net
+from custom_models.dcnv2_block_fuxictr import DCNv2NetFuxiCTR
 import os
 
-class TabularDCNv2TorchModel(TabularNeuralNetTorchModel):
-    ag_key = "DCNV2"         # ← 반드시 문자열, hyperparameters에서 사용할 키
-    ag_name = "DCNV2"        # ← 사람이 읽기 좋은 이름
-    ag_priority = 100         # ← 우선순위(정수, 높을수록 먼저 학습)
-    _model_name = "TabularDCNv2TorchModel"
-    _model_type = "tabular_dcnv2_torch_model"
-    _typestr = "tabular_dcnv2_torch_model_v1_dcnv2"  # ✅ 반드시 NN_TORCH와 다르게
+class TabularDCNv2FuxiCTRTorchModel(TabularNeuralNetTorchModel):
+    ag_key = "DCNV2_FUXICTR"         # ← 고유한 키로 변경
+    ag_name = "DCNV2_FUXICTR"        # ← FuxiCTR 이름
+    ag_priority = 100
+    _model_name = "TabularDCNv2FuxiCTRTorchModel"
+    _model_type = "tabular_dcnv2_fuxictr_torch_model"
+    _typestr = "tabular_dcnv2_fuxictr_torch_model_v1_fuxictr"  # ✅ FuxiCTR 타입
+
+    @classmethod
+    def register(cls):
+        """모델을 AutoGluon에 등록"""
+        from autogluon.tabular.models.tabular_nn.torch.tabular_nn_torch import ag_model_registry
+        ag_model_registry.add(cls)
+        print(f"✅ {cls.ag_name} 모델이 AutoGluon에 등록되었습니다!")
 
     def __init__(self, **kwargs):
-        print("🔧 DCNv2 __init__() 호출됨!")
+        print("🔧 DCNv2 FuxiCTR __init__() 호출됨!")
         print(f"📋 받은 kwargs: {list(kwargs.keys())}")
         super().__init__(**kwargs)
-        print("✅ DCNv2 초기화 완료!")
+        print("✅ DCNv2 FuxiCTR 초기화 완료!")
 
     def _set_default_params(self):
-        """기본 하이퍼파라미터 설정 - AutoGluon 기본 + DCNv2 커스텀"""
-        print("🔧 DCNv2 _set_default_params() 호출됨!")
+        """FuxiCTR 스타일 기본 하이퍼파라미터 설정"""
+        print("🔧 DCNv2 FuxiCTR _set_default_params() 호출됨!")
         
         # AutoGluon 기본 파라미터 가져오기
         default_params = get_default_param(problem_type=self.problem_type, framework="pytorch")
         
-        # DCNv2 커스텀 파라미터 추가
-        dcnv2_params = {
-            'num_cross_layers': 3,
+        # FuxiCTR 스타일 DCNv2 파라미터
+        dcnv2_fuxictr_params = {
+            'num_cross_layers': 2,
             'cross_dropout': 0.1,
             'low_rank': 32,
+            'use_low_rank_mixture': False,
+            'num_experts': 4,
+            'model_structure': 'parallel',
             'deep_output_size': 128,
             'deep_hidden_size': 128,
             'deep_dropout': 0.1,
@@ -44,34 +54,37 @@ class TabularDCNv2TorchModel(TabularNeuralNetTorchModel):
             'lr_scheduler_factor': 0.2,
             'lr_scheduler_min_lr': 1e-6,
         }
-        default_params.update(dcnv2_params)
+        default_params.update(dcnv2_fuxictr_params)
         
         for param, val in default_params.items():
             self._set_default_param_value(param, val)
         
-        print(f"✅ DCNv2 기본 파라미터 설정 완료: {list(default_params.keys())}")
+        print(f"✅ DCNv2 FuxiCTR 기본 파라미터 설정 완료: {list(default_params.keys())}")
 
     def _get_default_searchspace(self):
-        """DCNv2 모델의 기본 검색 공간 정의 - AutoGluon 기본 + DCNv2 커스텀"""
-        print("🔍 DCNv2 _get_default_searchspace() 호출됨!")
+        """FuxiCTR 스타일 검색 공간 정의"""
+        print("🔍 DCNv2 FuxiCTR _get_default_searchspace() 호출됨!")
         
         # AutoGluon 기본 Search Space 가져오기
         base_searchspace = get_default_searchspace(problem_type=self.problem_type, framework="pytorch")
         
-        # DCNv2 커스텀 Search Space 추가
-        dcnv2_searchspace = {
-            'num_cross_layers': space.Categorical(2, 3, 4),
-            'cross_dropout': space.Categorical(0.0, 0.1, 0.2),
-            'low_rank': space.Categorical(16, 32, 64),
-            'deep_output_size': space.Categorical(64, 128, 256),
-            'deep_hidden_size': space.Categorical(64, 128, 256),
-            'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-            'deep_layers': space.Categorical(2, 3, 4),
+        # FuxiCTR 스타일 DCNv2 Search Space
+        dcnv2_fuxictr_searchspace = {
+            'num_cross_layers': space.Categorical(2, 3),  # FuxiCTR 범위
+            'cross_dropout': space.Categorical(0.0, 0.1),
+            'low_rank': space.Categorical(16, 32, 64),  # FuxiCTR 범위
+            'use_low_rank_mixture': space.Categorical(False, True),
+            'num_experts': space.Categorical(2, 4, 6),
+            'model_structure': space.Categorical('parallel', 'stacked', 'crossnet_only'),
+            'deep_output_size': space.Categorical(64, 128),
+            'deep_hidden_size': space.Categorical(64, 128),
+            'deep_dropout': space.Categorical(0.1, 0.2),
+            'deep_layers': space.Categorical(2, 3),
             # Learning Rate Scheduler Search Space
             'lr_scheduler': space.Categorical(True, False),
-            'scheduler_type': space.Categorical('plateau', 'cosine', 'onecycle'),
-            'lr_scheduler_patience': space.Categorical(3, 5, 7),
-            'lr_scheduler_factor': space.Categorical(0.1, 0.2, 0.3),
+            'scheduler_type': space.Categorical('plateau', 'cosine'),
+            'lr_scheduler_patience': space.Categorical(3, 5),
+            'lr_scheduler_factor': space.Categorical(0.1, 0.2),
             'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
             # fit에서 넘기는 고정 파라미터도 포함
             'epochs_wo_improve': space.Categorical(5),
@@ -79,47 +92,62 @@ class TabularDCNv2TorchModel(TabularNeuralNetTorchModel):
         }
         
         # 기본 Search Space와 커스텀 Search Space 합치기
-        base_searchspace.update(dcnv2_searchspace)
+        base_searchspace.update(dcnv2_fuxictr_searchspace)
         
-        print(f"✅ DCNv2 검색 공간 생성됨: {list(base_searchspace.keys())}")
+        print(f"✅ DCNv2 FuxiCTR 검색 공간 생성됨: {list(base_searchspace.keys())}")
         return base_searchspace
 
     @classmethod
     def get_default_searchspace(cls, problem_type, num_classes=None, **kwargs):
-        """DCNv2 모델의 기본 검색 공간 정의 (클래스 메서드 - 외부 호출용)"""
+        """FuxiCTR 스타일 검색 공간 정의 (클래스 메서드 - 외부 호출용)"""
         # AutoGluon 기본 Search Space 가져오기
         base_searchspace = get_default_searchspace(problem_type=problem_type, framework="pytorch")
         
-        # DCNv2 커스텀 Search Space 추가 (모든 problem_type에 공통)
-        dcnv2_searchspace = {
-            'num_cross_layers': space.Categorical(2, 3),
-            'learning_rate': space.Categorical(0.0001, 0.001),
+        # FuxiCTR 스타일 DCNv2 Search Space
+        dcnv2_fuxictr_searchspace = {
+            'num_cross_layers': space.Categorical(2, 3),  # FuxiCTR 범위
+            'cross_dropout': space.Categorical(0.0, 0.1),
+            'low_rank': space.Categorical(16, 32, 64),  # FuxiCTR 범위
+            'use_low_rank_mixture': space.Categorical(False, True),
+            'num_experts': space.Categorical(2, 4, 6),
+            'model_structure': space.Categorical('parallel', 'stacked', 'crossnet_only'),
+            'deep_output_size': space.Categorical(64, 128),
+            'deep_hidden_size': space.Categorical(64, 128),
+            'deep_dropout': space.Categorical(0.1, 0.2),
+            'deep_layers': space.Categorical(2, 3),
+            # Learning Rate Scheduler Search Space
+            'lr_scheduler': space.Categorical(True, False),
+            'scheduler_type': space.Categorical('plateau', 'cosine'),
+            'lr_scheduler_patience': space.Categorical(3, 5),
+            'lr_scheduler_factor': space.Categorical(0.1, 0.2),
+            'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
+            # fit에서 넘기는 고정 파라미터도 포함
             'epochs_wo_improve': space.Categorical(5),
             'num_epochs': space.Categorical(20),
         }
         
         # 기본 Search Space와 커스텀 Search Space 합치기
-        base_searchspace.update(dcnv2_searchspace)
+        base_searchspace.update(dcnv2_fuxictr_searchspace)
         return base_searchspace
 
     def _get_net(self, train_dataset, params):
-        print("🔧 DCNv2 _get_net() 호출됨!")
+        print("🔧 DCNv2 FuxiCTR _get_net() 호출됨!")
         print(f"📋 받은 파라미터: {list(params.keys())}")
         print(f"📊 파라미터 타입 확인:")
         for key, value in params.items():
             print(f"  {key}: {type(value)} = {value}")
         
-        # EmbedNet 대신 DCNv2Net 생성
+        # FuxiCTR 스타일 DCNv2Net 생성
         params = self._set_net_defaults(train_dataset, params)
         
-        # DCNv2Net 생성 - AutoGluon 기본 방식과 동일하게 모든 파라미터 전달
-        model = DCNv2Net(
+        # DCNv2NetFuxiCTR 생성
+        model = DCNv2NetFuxiCTR(
             problem_type=self.problem_type,
             num_net_outputs=self._get_num_net_outputs(),
             quantile_levels=self.quantile_levels,
             train_dataset=train_dataset,
             device=self.device,
-            **params,  # 모든 파라미터를 그대로 전달 (AutoGluon 기본 방식)
+            **params,  # 모든 파라미터를 그대로 전달
         )
         model = model.to(self.device)
         
@@ -129,12 +157,12 @@ class TabularDCNv2TorchModel(TabularNeuralNetTorchModel):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
         
-        print("✅ DCNv2Net 모델 생성 완료!")
+        print("✅ DCNv2NetFuxiCTR 모델 생성 완료!")
         return model
     
     def _train_net(self, train_dataset, loss_kwargs, batch_size, num_epochs, epochs_wo_improve, val_dataset=None, test_dataset=None, time_limit=None, reporter=None, verbosity=2):
-        """LR 스케줄러가 적용된 커스텀 학습 메서드"""
-        print("🚀 DCNv2 _train_net 호출됨!")  # 디버그 출력 추가
+        """FuxiCTR 스타일 학습 메서드"""
+        print("🚀 DCNv2 FuxiCTR _train_net 호출됨!")
         import torch
         import torch.optim.lr_scheduler as lr_scheduler
         
@@ -147,7 +175,7 @@ class TabularDCNv2TorchModel(TabularNeuralNetTorchModel):
                     T_max=num_epochs,
                     eta_min=self.model.lr_scheduler_min_lr
                 )
-                print(f"✅ DCNv2: Cosine Annealing LR 스케줄러 적용됨 (min_lr={self.model.lr_scheduler_min_lr})")
+                print(f"✅ DCNv2 FuxiCTR: Cosine Annealing LR 스케줄러 적용됨 (min_lr={self.model.lr_scheduler_min_lr})")
             elif self.model.scheduler_type == 'plateau':
                 scheduler = lr_scheduler.ReduceLROnPlateau(
                     self.optimizer,
@@ -156,9 +184,9 @@ class TabularDCNv2TorchModel(TabularNeuralNetTorchModel):
                     patience=self.model.lr_scheduler_patience,
                     min_lr=self.model.lr_scheduler_min_lr
                 )
-                print(f"✅ DCNv2: ReduceLROnPlateau LR 스케줄러 적용됨 (factor={self.model.lr_scheduler_factor}, patience={self.model.lr_scheduler_patience})")
+                print(f"✅ DCNv2 FuxiCTR: ReduceLROnPlateau LR 스케줄러 적용됨 (factor={self.model.lr_scheduler_factor}, patience={self.model.lr_scheduler_patience})")
             else:
-                print(f"⚠️ DCNv2: 알 수 없는 스케줄러 타입 '{self.model.scheduler_type}'")
+                print(f"⚠️ DCNv2 FuxiCTR: 알 수 없는 스케줄러 타입 '{self.model.scheduler_type}'")
         
         # 부모 클래스의 기본 학습 로직 실행 (스케줄러와 함께)
         if scheduler:

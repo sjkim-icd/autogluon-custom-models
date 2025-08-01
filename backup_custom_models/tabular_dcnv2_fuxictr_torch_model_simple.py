@@ -1,29 +1,41 @@
-# [my_models] DeepFM 진입점
+# [my_models] FuxiCTR 스타일 DCNv2 진입점 - 원래 잘 작동하는 파일 기반
 
 from autogluon.tabular.models.tabular_nn.torch.tabular_nn_torch import TabularNeuralNetTorchModel
 from autogluon.common import space
 from autogluon.tabular.models.tabular_nn.hyperparameters.parameters import get_default_param
 from autogluon.tabular.models.tabular_nn.hyperparameters.searchspaces import get_default_searchspace
-from custom_models.deepfm_block import DeepFMNet
+from custom_models.dcnv2_block_fuxictr import DCNv2NetFuxiCTR
 import os
 
-class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
-    ag_key = "DEEPFM"         # ← 반드시 문자열, hyperparameters에서 사용할 키
-    ag_name = "DEEPFM"        # ← 사람이 읽기 좋은 이름
-    ag_priority = 100         # ← 우선순위(정수, 높을수록 먼저 학습)
-    _model_name = "TabularDeepFMTorchModel"
-    _model_type = "tabular_deepfm_torch_model"
-    _typestr = "tabular_deepfm_torch_model_v1_deepfm"  # ✅ 반드시 NN_TORCH와 다르게
+class TabularDCNv2FuxiCTRTorchModel(TabularNeuralNetTorchModel):
+    ag_key = "DCNV2_FUXICTR"         # ← FuxiCTR 키
+    ag_name = "DCNV2_FUXICTR"        # ← FuxiCTR 이름
+    ag_priority = 100
+    _model_name = "TabularDCNv2FuxiCTRTorchModel"
+    _model_type = "tabular_dcnv2_fuxictr_torch_model"
+    _typestr = "tabular_dcnv2_fuxictr_torch_model_v1_fuxictr"  # ✅ FuxiCTR 타입
+
+    def __init__(self, **kwargs):
+        print("🔧 DCNv2 FuxiCTR __init__() 호출됨!")
+        print(f"📋 받은 kwargs: {list(kwargs.keys())}")
+        super().__init__(**kwargs)
+        print("✅ DCNv2 FuxiCTR 초기화 완료!")
 
     def _set_default_params(self):
-        """기본 하이퍼파라미터 설정 - AutoGluon 기본 + DeepFM 커스텀"""
+        """FuxiCTR 스타일 기본 하이퍼파라미터 설정"""
+        print("🔧 DCNv2 FuxiCTR _set_default_params() 호출됨!")
+        
         # AutoGluon 기본 파라미터 가져오기
         default_params = get_default_param(problem_type=self.problem_type, framework="pytorch")
         
-        # DeepFM 커스텀 파라미터 추가
-        deepfm_params = {
-            'fm_dropout': 0.1,
-            'fm_embedding_dim': 10,
+        # FuxiCTR 스타일 DCNv2 파라미터
+        dcnv2_fuxictr_params = {
+            'num_cross_layers': 2,
+            'cross_dropout': 0.1,
+            'low_rank': 32,
+            'use_low_rank_mixture': False,
+            'num_experts': 4,
+            'model_structure': 'parallel',
             'deep_output_size': 128,
             'deep_hidden_size': 128,
             'deep_dropout': 0.1,
@@ -35,122 +47,100 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
             'lr_scheduler_factor': 0.2,
             'lr_scheduler_min_lr': 1e-6,
         }
-        default_params.update(deepfm_params)
+        default_params.update(dcnv2_fuxictr_params)
         
         for param, val in default_params.items():
             self._set_default_param_value(param, val)
+        
+        print(f"✅ DCNv2 FuxiCTR 기본 파라미터 설정 완료: {list(default_params.keys())}")
 
     def _get_default_searchspace(self):
-        """DeepFM 모델의 기본 검색 공간 정의 - AutoGluon 기본 + DeepFM 커스텀"""
+        """FuxiCTR 스타일 검색 공간 정의"""
+        print("🔍 DCNv2 FuxiCTR _get_default_searchspace() 호출됨!")
+        
         # AutoGluon 기본 Search Space 가져오기
         base_searchspace = get_default_searchspace(problem_type=self.problem_type, framework="pytorch")
         
-        # DeepFM 커스텀 Search Space 추가
-        if self.problem_type == 'binary':
-            deepfm_searchspace = {
-                'fm_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'fm_embedding_dim': space.Categorical(8, 10, 12),
-                'deep_output_size': space.Categorical(64, 128, 256),
-                'deep_hidden_size': space.Categorical(64, 128, 256),
-                'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'deep_layers': space.Categorical(2, 3, 4),
-                # Learning Rate Scheduler Search Space
-                'lr_scheduler': space.Categorical(True, False),
-                'scheduler_type': space.Categorical('plateau', 'cosine', 'onecycle'),
-                'lr_scheduler_patience': space.Categorical(3, 5, 7),
-                'lr_scheduler_factor': space.Categorical(0.1, 0.2, 0.3),
-                'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
-            }
-        elif self.problem_type == 'multiclass':
-            deepfm_searchspace = {
-                'fm_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'fm_embedding_dim': space.Categorical(8, 10, 12),
-                'deep_output_size': space.Categorical(64, 128, 256),
-                'deep_hidden_size': space.Categorical(64, 128, 256),
-                'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'deep_layers': space.Categorical(2, 3, 4),
-                # Learning Rate Scheduler Search Space
-                'lr_scheduler': space.Categorical(True, False),
-                'scheduler_type': space.Categorical('plateau', 'cosine', 'onecycle'),
-                'lr_scheduler_patience': space.Categorical(3, 5, 7),
-                'lr_scheduler_factor': space.Categorical(0.1, 0.2, 0.3),
-                'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
-            }
-        elif self.problem_type == 'regression':
-            deepfm_searchspace = {
-                'fm_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'fm_embedding_dim': space.Categorical(8, 10, 12),
-                'deep_output_size': space.Categorical(64, 128, 256),
-                'deep_hidden_size': space.Categorical(64, 128, 256),
-                'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'deep_layers': space.Categorical(2, 3, 4),
-                # Learning Rate Scheduler Search Space
-                'lr_scheduler': space.Categorical(True, False),
-                'scheduler_type': space.Categorical('plateau', 'cosine', 'onecycle'),
-                'lr_scheduler_patience': space.Categorical(3, 5, 7),
-                'lr_scheduler_factor': space.Categorical(0.1, 0.2, 0.3),
-                'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
-            }
-        else:
-            deepfm_searchspace = {}
+        # FuxiCTR 스타일 DCNv2 Search Space
+        dcnv2_fuxictr_searchspace = {
+            'num_cross_layers': space.Categorical(2, 3),  # FuxiCTR 범위
+            'cross_dropout': space.Categorical(0.0, 0.1),
+            'low_rank': space.Categorical(16, 32, 64),  # FuxiCTR 범위
+            'use_low_rank_mixture': space.Categorical(False, True),
+            'num_experts': space.Categorical(2, 4, 6),
+            'model_structure': space.Categorical('parallel', 'stacked', 'crossnet_only'),
+            'deep_output_size': space.Categorical(64, 128),
+            'deep_hidden_size': space.Categorical(64, 128),
+            'deep_dropout': space.Categorical(0.1, 0.2),
+            'deep_layers': space.Categorical(2, 3),
+            # Learning Rate Scheduler Search Space
+            'lr_scheduler': space.Categorical(True, False),
+            'scheduler_type': space.Categorical('plateau', 'cosine'),
+            'lr_scheduler_patience': space.Categorical(3, 5),
+            'lr_scheduler_factor': space.Categorical(0.1, 0.2),
+            'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
+            # fit에서 넘기는 고정 파라미터도 포함
+            'epochs_wo_improve': space.Categorical(5),
+            'num_epochs': space.Categorical(20),
+        }
         
         # 기본 Search Space와 커스텀 Search Space 합치기
-        base_searchspace.update(deepfm_searchspace)
+        base_searchspace.update(dcnv2_fuxictr_searchspace)
+        
+        print(f"✅ DCNv2 FuxiCTR 검색 공간 생성됨: {list(base_searchspace.keys())}")
         return base_searchspace
 
     @classmethod
     def get_default_searchspace(cls, problem_type, num_classes=None, **kwargs):
-        """DeepFM 모델의 기본 검색 공간 정의 (클래스 메서드 - 외부 호출용)"""
+        """FuxiCTR 스타일 검색 공간 정의 (클래스 메서드 - 외부 호출용)"""
         # AutoGluon 기본 Search Space 가져오기
         base_searchspace = get_default_searchspace(problem_type=problem_type, framework="pytorch")
         
-        # DeepFM 커스텀 Search Space 추가
-        if problem_type == 'binary':
-            deepfm_searchspace = {
-                'fm_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'fm_embedding_dim': space.Categorical(8, 10, 12),
-                'deep_output_size': space.Categorical(64, 128, 256),
-                'deep_hidden_size': space.Categorical(64, 128, 256),
-                'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'deep_layers': space.Categorical(2, 3, 4),
-            }
-        elif problem_type == 'multiclass':
-            deepfm_searchspace = {
-                'fm_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'fm_embedding_dim': space.Categorical(8, 10, 12),
-                'deep_output_size': space.Categorical(64, 128, 256),
-                'deep_hidden_size': space.Categorical(64, 128, 256),
-                'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'deep_layers': space.Categorical(2, 3, 4),
-            }
-        elif problem_type == 'regression':
-            deepfm_searchspace = {
-                'fm_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'fm_embedding_dim': space.Categorical(8, 10, 12),
-                'deep_output_size': space.Categorical(64, 128, 256),
-                'deep_hidden_size': space.Categorical(64, 128, 256),
-                'deep_dropout': space.Categorical(0.1, 0.2, 0.3),
-                'deep_layers': space.Categorical(2, 3, 4),
-            }
-        else:
-            deepfm_searchspace = {}
+        # FuxiCTR 스타일 DCNv2 Search Space
+        dcnv2_fuxictr_searchspace = {
+            'num_cross_layers': space.Categorical(2, 3),  # FuxiCTR 범위
+            'cross_dropout': space.Categorical(0.0, 0.1),
+            'low_rank': space.Categorical(16, 32, 64),  # FuxiCTR 범위
+            'use_low_rank_mixture': space.Categorical(False, True),
+            'num_experts': space.Categorical(2, 4, 6),
+            'model_structure': space.Categorical('parallel', 'stacked', 'crossnet_only'),
+            'deep_output_size': space.Categorical(64, 128),
+            'deep_hidden_size': space.Categorical(64, 128),
+            'deep_dropout': space.Categorical(0.1, 0.2),
+            'deep_layers': space.Categorical(2, 3),
+            # Learning Rate Scheduler Search Space
+            'lr_scheduler': space.Categorical(True, False),
+            'scheduler_type': space.Categorical('plateau', 'cosine'),
+            'lr_scheduler_patience': space.Categorical(3, 5),
+            'lr_scheduler_factor': space.Categorical(0.1, 0.2),
+            'lr_scheduler_min_lr': space.Real(1e-7, 1e-5, default=1e-6, log=True),
+            # fit에서 넘기는 고정 파라미터도 포함
+            'epochs_wo_improve': space.Categorical(5),
+            'num_epochs': space.Categorical(20),
+        }
         
         # 기본 Search Space와 커스텀 Search Space 합치기
-        base_searchspace.update(deepfm_searchspace)
+        base_searchspace.update(dcnv2_fuxictr_searchspace)
         return base_searchspace
 
     def _get_net(self, train_dataset, params):
-        # EmbedNet 대신 DeepFMNet 생성
+        print("🔧 DCNv2 FuxiCTR _get_net() 호출됨!")
+        print(f"📋 받은 파라미터: {list(params.keys())}")
+        print(f"📊 파라미터 타입 확인:")
+        for key, value in params.items():
+            print(f"  {key}: {type(value)} = {value}")
+        
+        # FuxiCTR 스타일 DCNv2Net 생성
         params = self._set_net_defaults(train_dataset, params)
         
-        # DeepFMNet 생성
-        model = DeepFMNet(
+        # DCNv2NetFuxiCTR 생성 - 원래 잘 작동하는 방식과 동일하게 모든 파라미터 전달
+        model = DCNv2NetFuxiCTR(
             problem_type=self.problem_type,
             num_net_outputs=self._get_num_net_outputs(),
             quantile_levels=self.quantile_levels,
             train_dataset=train_dataset,
             device=self.device,
-            **params,
+            **params,  # 모든 파라미터를 그대로 전달 (원래 잘 작동하는 방식)
         )
         model = model.to(self.device)
         
@@ -160,11 +150,12 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
         if not os.path.exists(self.path):
             os.makedirs(self.path)
         
+        print("✅ DCNv2NetFuxiCTR 모델 생성 완료!")
         return model
     
     def _train_net(self, train_dataset, loss_kwargs, batch_size, num_epochs, epochs_wo_improve, val_dataset=None, test_dataset=None, time_limit=None, reporter=None, verbosity=2):
-        """LR 스케줄러가 적용된 커스텀 학습 메서드"""
-        print("🚀 DeepFM _train_net 호출됨!")  # 디버그 출력 추가
+        """FuxiCTR 스타일 학습 메서드 - 원래 잘 작동하는 방식과 동일"""
+        print("🚀 DCNv2 FuxiCTR _train_net 호출됨!")
         import torch
         import torch.optim.lr_scheduler as lr_scheduler
         
@@ -177,7 +168,7 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
                     T_max=num_epochs,
                     eta_min=self.model.lr_scheduler_min_lr
                 )
-                print(f"✅ DeepFM: Cosine Annealing LR 스케줄러 적용됨 (min_lr={self.model.lr_scheduler_min_lr})")
+                print(f"✅ DCNv2 FuxiCTR: Cosine Annealing LR 스케줄러 적용됨 (min_lr={self.model.lr_scheduler_min_lr})")
             elif self.model.scheduler_type == 'plateau':
                 scheduler = lr_scheduler.ReduceLROnPlateau(
                     self.optimizer,
@@ -186,9 +177,9 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
                     patience=self.model.lr_scheduler_patience,
                     min_lr=self.model.lr_scheduler_min_lr
                 )
-                print(f"✅ DeepFM: ReduceLROnPlateau LR 스케줄러 적용됨 (factor={self.model.lr_scheduler_factor}, patience={self.model.lr_scheduler_patience})")
+                print(f"✅ DCNv2 FuxiCTR: ReduceLROnPlateau LR 스케줄러 적용됨 (factor={self.model.lr_scheduler_factor}, patience={self.model.lr_scheduler_patience})")
             else:
-                print(f"⚠️ DeepFM: 알 수 없는 스케줄러 타입 '{self.model.scheduler_type}'")
+                print(f"⚠️ DCNv2 FuxiCTR: 알 수 없는 스케줄러 타입 '{self.model.scheduler_type}'")
         
         # 부모 클래스의 기본 학습 로직 실행 (스케줄러와 함께)
         if scheduler:
@@ -199,7 +190,7 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
             super()._train_net(train_dataset, loss_kwargs, batch_size, num_epochs, epochs_wo_improve, val_dataset, test_dataset, time_limit, reporter, verbosity)
     
     def _train_with_scheduler(self, train_dataset, loss_kwargs, batch_size, num_epochs, epochs_wo_improve, val_dataset=None, test_dataset=None, time_limit=None, reporter=None, verbosity=2, scheduler=None):
-        """스케줄러와 함께 학습하면서 LR 모니터링"""
+        """FuxiCTR 스타일 스케줄러와 함께 학습 - 원래 잘 작동하는 방식과 동일"""
         import torch
         import time
         import io
@@ -270,26 +261,30 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
                     torch.save(self.model, io_buffer)
                     best_epoch = epoch + 1
             
-            # 출력 (AutoGluon 형식 + LR)
-            if val_metric is not None:
-                print(f"Epoch {epoch+1} (Update {epoch+1}).\t"
-                      f"Train loss: {avg_loss:.4f}, "
-                      f"Val {self.stopping_metric.name}: {val_metric:.4f}, "
-                      f"LR: {current_lr:.2e}, "
-                      f"Best Epoch: {best_epoch}")
-            else:
-                print(f"Epoch {epoch+1} (Update {epoch+1}).\t"
-                      f"Train loss: {avg_loss:.4f}, "
-                      f"LR: {current_lr:.2e}")
+            # 간단한 epoch 로그 출력
+            import time as time_module
+            current_time = time_module.strftime("%Y-%m-%d %H:%M:%S")
             
-            print(f"   Time: {epoch_time:.2f}s")
+            if val_metric is not None:
+                log_msg = f"[{current_time}] Epoch {epoch+1}/{num_epochs}: " \
+                          f"Train loss: {avg_loss:.4f}, " \
+                          f"Val {self.stopping_metric.name}: {val_metric:.4f}, " \
+                          f"LR: {current_lr:.2e}, " \
+                          f"Best Epoch: {best_epoch}, " \
+                          f"Time: {epoch_time:.2f}s"
+            else:
+                log_msg = f"[{current_time}] Epoch {epoch+1}/{num_epochs}: " \
+                          f"Train loss: {avg_loss:.4f}, " \
+                          f"LR: {current_lr:.2e}, " \
+                          f"Time: {epoch_time:.2f}s"
+            
+            print(log_msg)
             
             # 스케줄러 스텝
             if scheduler:
                 if isinstance(scheduler, torch.optim.lr_scheduler.CosineAnnealingLR):
                     scheduler.step()
                 elif isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    # validation metric 사용
                     scheduler.step(val_metric if val_metric is not None else avg_loss)
             
             # Early stopping 체크
@@ -304,4 +299,4 @@ class TabularDeepFMTorchModel(TabularNeuralNetTorchModel):
         if io_buffer is not None:
             io_buffer.seek(0)
             self.model = torch.load(io_buffer, weights_only=False)
-            print(f"   Best model loaded from epoch {best_epoch} (Val f1: {best_val_metric:.4f})")
+            print(f"   Best model loaded from epoch {best_epoch} (Val f1: {best_val_metric:.4f})") 

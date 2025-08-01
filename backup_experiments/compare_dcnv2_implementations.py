@@ -1,0 +1,90 @@
+# FuxiCTR DCNv2 vs 우리 DCNv2 구현 비교 분석
+
+print("=== FuxiCTR DCNv2 vs 우리 DCNv2 구현 비교 ===")
+print()
+
+print("📖 **FuxiCTR DCNv2 구현 분석:**")
+print("1. **CrossNetV2 사용**:")
+print("   - CrossNetV2 클래스 사용")
+print("   - use_low_rank_mixture=False (기본)")
+print("   - low_rank=32 (기본값)")
+print()
+
+print("2. **모델 구조 옵션**:")
+print("   - crossnet_only: Cross Network만 사용")
+print("   - stacked: Cross Network -> Deep Network")
+print("   - parallel: Cross Network + Deep Network (병렬)")
+print("   - stacked_parallel: Cross Network -> Deep Network + Deep Network (병렬)")
+print()
+
+print("3. **Forward Pass**:")
+print("   - feature_emb = embedding_layer(X)")
+print("   - cross_out = crossnet(feature_emb)")
+print("   - dnn_out = parallel_dnn(feature_emb)  # parallel 구조")
+print("   - final_out = torch.cat([cross_out, dnn_out], dim=-1)")
+print()
+
+print("🔍 **우리 DCNv2 구현 분석:**")
+print("1. **Cross Network**:")
+print("   - CrossNetworkPaper 클래스 사용")
+print("   - low_rank factorization 직접 구현")
+print("   - xw = torch.sum(U_out * V_out, dim=1, keepdim=True)")
+print()
+
+print("2. **모델 구조**:")
+print("   - Cross Network + Deep Network (병렬)")
+print("   - combination_layer로 결합")
+print()
+
+print("3. **Forward Pass**:")
+print("   - cross_output = cross_network(x)")
+print("   - deep_output = deep_network(x)")
+print("   - combined = torch.cat([cross_output, deep_output], dim=1)")
+print("   - output = combination_layer(combined)")
+print()
+
+print("📊 **주요 차이점:**")
+print("1. **구조적 차이**:")
+print("   - FuxiCTR: 더 유연한 구조 옵션 (4가지)")
+print("   - 우리: 단일 구조 (parallel만)")
+print()
+
+print("2. **Cross Network 구현**:")
+print("   - FuxiCTR: CrossNetV2 클래스 (검증된 구현)")
+print("   - 우리: 직접 구현 (CrossNetworkPaper)")
+print()
+
+print("3. **Embedding 처리**:")
+print("   - FuxiCTR: FeatureEmbedding 사용")
+print("   - 우리: EmbedNet 사용 (AutoGluon)")
+print()
+
+print("4. **Low-rank factorization**:")
+print("   - FuxiCTR: CrossNetV2 내부에서 처리")
+print("   - 우리: 직접 구현")
+print()
+
+print("🎯 **성능 차이의 가능한 원인:**")
+print("1. **구현 품질**:")
+print("   - FuxiCTR: 검증된 라이브러리 구현")
+print("   - 우리: 직접 구현 (버그 가능성)")
+print()
+
+print("2. **구조적 차이**:")
+print("   - FuxiCTR: 더 정교한 Cross Network")
+print("   - 우리: 단순화된 구현")
+print()
+
+print("3. **하이퍼파라미터**:")
+print("   - FuxiCTR: 최적화된 기본값")
+print("   - 우리: 임의의 기본값")
+print()
+
+print("💡 **개선 방안:**")
+print("1. FuxiCTR의 CrossNetV2 구현을 참고하여 우리 구현 수정")
+print("2. 더 정확한 low-rank factorization 구현")
+print("3. 다양한 모델 구조 옵션 추가")
+print("4. 검증된 하이퍼파라미터 사용")
+print()
+
+print("=== 비교 분석 완료 ===") 

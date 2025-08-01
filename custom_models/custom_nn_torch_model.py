@@ -1,89 +1,30 @@
 from autogluon.tabular.models.tabular_nn.torch.tabular_nn_torch import TabularNeuralNetTorchModel
-import torch.nn as nn
-import torch
-import torch.nn.functional as F
 
-class FocalLoss(nn.Module):
-    """
-    Focal Loss (for multi-class or binary classification with logits)
-    
-    수식:
-        FL(p_t) = -α * (1 - p_t)^γ * log(p_t)
-
-    여기서,
-        - p_c: 전체 클래스에 대한 예측 확률
-        - p_t: 정답 클래스에 대한 예측 확률
-        - α: 클래스 불균형 보정 계수
-        - γ: 어려운 샘플에 더 큰 가중치를 두는 집중도 조절 계수
-
-    참고:
-        CrossEntropyLoss는 -log(p_t)만 사용하는 반면,
-        FocalLoss는 거기에 (1 - p_t)^γ를 곱해서 '쉬운 샘플'의 손실을 줄여줌
-    """
-
-    def __init__(self, alpha=1.0, gamma=2.0, reduction='mean'):
-        super().__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.reduction = reduction
-
-    def forward(self, inputs, targets):
-        """
-        inputs: (batch_size, num_classes) - raw logits
-        targets: (batch_size,) - class indices (e.g., 0 또는 1)
-        """
-
-        # 1. log(p_c): CrossEntropy처럼 softmax + log 를 한 번에 수행
-        log_probs = F.log_softmax(inputs, dim=1)  # shape: (B, C)
-
-        # 2. p_c: log(p_c)를 지수화하여 확률로 복원
-        probs = torch.exp(log_probs)              # shape: (B, C)
-
-        # 3. 정답 클래스 인덱스를 long으로 변환
-        targets = targets.long()
-
-        # 4. p_c에서 정답 클래스에 해당하는 확률 p_t 추출
-        pt = probs.gather(1, targets.unsqueeze(1)).squeeze(1)      # shape: (B,)
-        log_pt = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)  # log(p_t)
-
-        # 5. focal loss 공식 적용: -α * (1 - p_t)^γ * log(p_t)
-        loss = -self.alpha * (1 - pt) ** self.gamma * log_pt
-
-        # 6. 평균 or 합산
-        if self.reduction == 'mean':
-            return loss.mean()
-        else:
-            return loss.sum()
-
-
-class CustomFocalDLModel(TabularNeuralNetTorchModel):
-    ag_key = "CUSTOM_FOCAL_DL"
-    ag_name = "CUSTOM_FOCAL_DL"
+class CustomNNTorchModel(TabularNeuralNetTorchModel):
+    ag_key = "CUSTOM_NN_TORCH"
+    ag_name = "CUSTOM_NN_TORCH"
     ag_priority = 100
-    _model_name = "CustomFocalDLModel"
-    _model_type = "custom_focal_dl_model"
-    _typestr = "custom_focal_dl_model_v1_focalloss"
-    
-    def _get_default_loss_function(self):
-        return FocalLoss(alpha=1.0, gamma=2.0)
+    _model_name = "CustomNNTorchModel"
+    _model_type = "custom_nn_torch_model"
+    _typestr = "custom_nn_torch_model_v1_crossentropy"
     
     def _set_params(self, **kwargs):
         """LR scheduler 관련 파라미터를 필터링"""
-        print(f"🔧 CustomFocalDL _set_params 호출됨! kwargs={kwargs}")
+        print(f"🔧 CustomNNTorch _set_params 호출됨! kwargs={kwargs}")
         
         # LR scheduler 관련 파라미터들을 pop해서 저장
         self.lr_scheduler = kwargs.pop('lr_scheduler', True)
         self.scheduler_type = kwargs.pop('scheduler_type', 'cosine')
         self.lr_scheduler_min_lr = kwargs.pop('lr_scheduler_min_lr', 1e-6)
         
-        print(f"🔧 CustomFocalDL _set_params: lr_scheduler={self.lr_scheduler}, scheduler_type={self.scheduler_type}, min_lr={self.lr_scheduler_min_lr}")
+        print(f"🔧 CustomNNTorch _set_params: lr_scheduler={self.lr_scheduler}, scheduler_type={self.scheduler_type}, min_lr={self.lr_scheduler_min_lr}")
         
         # 나머지 파라미터는 부모 클래스로 전달
         return super()._set_params(**kwargs)
     
     def _get_net(self, train_dataset, params):
         """LR scheduler 파라미터를 필터링해서 EmbedNet에 전달"""
-        print(f"🔧 CustomFocalDL _get_net 호출됨! params={params}")
+        print(f"🔧 CustomNNTorch _get_net 호출됨! params={params}")
         
         # LR scheduler 관련 파라미터들을 필터링
         filtered_params = params.copy()
@@ -96,8 +37,8 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
         self.scheduler_type = scheduler_type
         self.lr_scheduler_min_lr = lr_scheduler_min_lr
         
-        print(f"🔧 CustomFocalDL _get_net: self에 LR 스케줄러 파라미터 저장됨")
-        print(f"🔧 CustomFocalDL _get_net: lr_scheduler={lr_scheduler}, scheduler_type={scheduler_type}, min_lr={lr_scheduler_min_lr}")
+        print(f"🔧 CustomNNTorch _get_net: self에 LR 스케줄러 파라미터 저장됨")
+        print(f"🔧 CustomNNTorch _get_net: lr_scheduler={lr_scheduler}, scheduler_type={scheduler_type}, min_lr={lr_scheduler_min_lr}")
         
         # 부모 클래스의 기본 _get_net 호출 (필터링된 파라미터 사용)
         model = super()._get_net(train_dataset, filtered_params)
@@ -108,9 +49,9 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
             model.scheduler_type = scheduler_type
             model.lr_scheduler_min_lr = lr_scheduler_min_lr
             
-            print(f"🔧 CustomFocalDL _get_net: model에도 LR 스케줄러 파라미터 설정됨")
+            print(f"🔧 CustomNNTorch _get_net: model에도 LR 스케줄러 파라미터 설정됨")
         else:
-            print(f"⚠️ CustomFocalDL _get_net: model이 None입니다. self에만 LR scheduler 설정됨")
+            print(f"⚠️ CustomNNTorch _get_net: model이 None입니다. self에만 LR scheduler 설정됨")
         
         return model
     
@@ -127,14 +68,13 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
         reporter=None,
         verbosity=2,
     ):
-        """AutoGluon의 _train_net 메서드를 복사하고 LR scheduler 추가"""
-        print("🚀 CustomFocalDL _train_net 호출됨!")  # 디버그 출력 추가
+        """DCNv2와 동일한 형식의 상세한 epoch별 출력"""
+        print("🚀 CustomNNTorch _train_net 호출됨!")
         import torch
         import torch.optim.lr_scheduler as lr_scheduler
         import time
         import logging
         import io
-        from copy import deepcopy
 
         start_time = time.time()
         logging.debug("initializing neural network...")
@@ -147,10 +87,10 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
         
         # LR scheduler 설정 (optimizer 생성 후)
         scheduler = None
-        print(f"🔍 CustomFocalDL Debug: self.lr_scheduler = {getattr(self, 'lr_scheduler', 'NOT_SET')}")
-        print(f"🔍 CustomFocalDL Debug: self.scheduler_type = {getattr(self, 'scheduler_type', 'NOT_SET')}")
-        print(f"🔍 CustomFocalDL Debug: hasattr(self, 'lr_scheduler') = {hasattr(self, 'lr_scheduler')}")
-        print(f"🔍 CustomFocalDL Debug: self.lr_scheduler (if exists) = {self.lr_scheduler if hasattr(self, 'lr_scheduler') else 'N/A'}")
+        print(f"🔍 CustomNNTorch Debug: self.lr_scheduler = {getattr(self, 'lr_scheduler', 'NOT_SET')}")
+        print(f"🔍 CustomNNTorch Debug: self.scheduler_type = {getattr(self, 'scheduler_type', 'NOT_SET')}")
+        print(f"🔍 CustomNNTorch Debug: hasattr(self, 'lr_scheduler') = {hasattr(self, 'lr_scheduler')}")
+        print(f"🔍 CustomNNTorch Debug: self.lr_scheduler (if exists) = {self.lr_scheduler if hasattr(self, 'lr_scheduler') else 'N/A'}")
         
         # 수정: _set_params에서 저장한 LR 스케줄러 파라미터 직접 사용
         if hasattr(self, 'lr_scheduler') and self.lr_scheduler:
@@ -160,7 +100,7 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
                     T_max=num_epochs,
                     eta_min=self.lr_scheduler_min_lr
                 )
-                print(f"✅ CustomFocalDL: Cosine Annealing LR 스케줄러 적용됨 (min_lr={self.lr_scheduler_min_lr})")
+                print(f"✅ CustomNNTorch: Cosine Annealing LR 스케줄러 적용됨 (min_lr={self.lr_scheduler_min_lr})")
             else:
                 scheduler = lr_scheduler.ReduceLROnPlateau(
                     self.optimizer,
@@ -169,9 +109,9 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
                     patience=5,
                     min_lr=self.lr_scheduler_min_lr
                 )
-                print(f"✅ CustomFocalDL: ReduceLROnPlateau LR 스케줄러 적용됨")
+                print(f"✅ CustomNNTorch: ReduceLROnPlateau LR 스케줄러 적용됨")
         else:
-            print(f"❌ CustomFocalDL: LR 스케줄러가 설정되지 않음")
+            print(f"❌ CustomNNTorch: LR 스케줄러가 설정되지 않음")
         
         # DCNv2와 동일한 형식의 상세한 학습 루프 호출
         self._train_with_scheduler(train_dataset, loss_kwargs, batch_size, num_epochs, epochs_wo_improve, val_dataset, test_dataset, time_limit, reporter, verbosity, scheduler)
