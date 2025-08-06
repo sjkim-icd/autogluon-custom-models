@@ -5,23 +5,30 @@ import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
     """
-    Focal Loss (for multi-class or binary classification with logits)
+    Focal Loss (논문 원본 수식 구현)
     
-    수식:
-        FL(p_t) = -α * (1 - p_t)^γ * log(p_t)
+    논문 수식:
+        FL(p_t) = -α_t * (1 - p_t)^γ * log(p_t)
 
     여기서,
-        - p_c: 전체 클래스에 대한 예측 확률
         - p_t: 정답 클래스에 대한 예측 확률
-        - α: 클래스 불균형 보정 계수
-        - γ: 어려운 샘플에 더 큰 가중치를 두는 집중도 조절 계수
+        - α_t: 클래스별 가중치
+          * α_t = α if y = 1 (positive class)
+          * α_t = 1 - α if y = 0 (negative class)
+        - γ: focusing parameter (논문에서는 γ = 2)
+        - (1 - p_t)^γ: 쉬운 샘플의 손실을 줄이는 modulating factor
+
+    논문 권장값:
+        - α = 0.25 (positive class 가중치)
+        - γ = 2.0 (focusing parameter)
 
     참고:
         CrossEntropyLoss는 -log(p_t)만 사용하는 반면,
         FocalLoss는 거기에 (1 - p_t)^γ를 곱해서 '쉬운 샘플'의 손실을 줄여줌
+        α_t를 통해 클래스 불균형도 함께 처리
     """
 
-    def __init__(self, alpha=1.0, gamma=2.0, reduction='mean'):
+    def __init__(self, alpha=0.25, gamma=2.0, reduction='mean'):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -46,10 +53,14 @@ class FocalLoss(nn.Module):
         pt = probs.gather(1, targets.unsqueeze(1)).squeeze(1)      # shape: (B,)
         log_pt = log_probs.gather(1, targets.unsqueeze(1)).squeeze(1)  # log(p_t)
 
-        # 5. focal loss 공식 적용: -α * (1 - p_t)^γ * log(p_t)
-        loss = -self.alpha * (1 - pt) ** self.gamma * log_pt
+        # 5. 논문 수식: α_t 계산
+        # α_t = α if y = 1 (positive class), α_t = 1 - α if y = 0 (negative class)
+        alpha_t = torch.where(targets == 1, self.alpha, 1 - self.alpha)
 
-        # 6. 평균 or 합산
+        # 6. focal loss 공식 적용: -α_t * (1 - p_t)^γ * log(p_t)
+        loss = -alpha_t * (1 - pt) ** self.gamma * log_pt
+
+        # 7. 평균 or 합산
         if self.reduction == 'mean':
             return loss.mean()
         else:
@@ -65,54 +76,59 @@ class CustomFocalDLModel(TabularNeuralNetTorchModel):
     _typestr = "custom_focal_dl_model_v1_focalloss"
     
     def _get_default_loss_function(self):
-        return FocalLoss(alpha=1.0, gamma=2.0)
+        # 논문 권장값 사용: α=0.25, γ=2.0
+        alpha = getattr(self, 'focal_alpha', 0.25)  # 기본값을 논문 권장값으로 변경
+        gamma = getattr(self, 'focal_gamma', 2.0)   # 기본값을 논문 권장값으로 변경
+        return FocalLoss(alpha=alpha, gamma=gamma)
     
     def _set_params(self, **kwargs):
-        """LR scheduler 관련 파라미터를 필터링"""
+        """Focal Loss 파라미터와 LR scheduler 관련 파라미터를 처리"""
         print(f"🔧 CustomFocalDL _set_params 호출됨! kwargs={kwargs}")
+        
+        # Focal Loss 특화 파라미터 처리 (논문 권장값으로 기본값 변경)
+        self.focal_alpha = kwargs.pop('focal_alpha', 0.25)  # 논문 권장값
+        self.focal_gamma = kwargs.pop('focal_gamma', 2.0)   # 논문 권장값
         
         # LR scheduler 관련 파라미터들을 pop해서 저장
         self.lr_scheduler = kwargs.pop('lr_scheduler', True)
         self.scheduler_type = kwargs.pop('scheduler_type', 'cosine')
         self.lr_scheduler_min_lr = kwargs.pop('lr_scheduler_min_lr', 1e-6)
         
+        print(f"🔧 CustomFocalDL _set_params: focal_alpha={self.focal_alpha}, focal_gamma={self.focal_gamma}")
         print(f"🔧 CustomFocalDL _set_params: lr_scheduler={self.lr_scheduler}, scheduler_type={self.scheduler_type}, min_lr={self.lr_scheduler_min_lr}")
         
         # 나머지 파라미터는 부모 클래스로 전달
         return super()._set_params(**kwargs)
     
     def _get_net(self, train_dataset, params):
-        """LR scheduler 파라미터를 필터링해서 EmbedNet에 전달"""
+        """Focal Loss 파라미터를 처리하고 EmbedNet에 전달"""
         print(f"🔧 CustomFocalDL _get_net 호출됨! params={params}")
         
-        # LR scheduler 관련 파라미터들을 필터링
+        # Focal Loss 파라미터들을 필터링
         filtered_params = params.copy()
+        focal_alpha = filtered_params.pop('focal_alpha', 0.25)  # 논문 권장값
+        focal_gamma = filtered_params.pop('focal_gamma', 2.0)   # 논문 권장값
+        
+        # LR scheduler 관련 파라미터들을 필터링
         lr_scheduler = filtered_params.pop('lr_scheduler', True)
         scheduler_type = filtered_params.pop('scheduler_type', 'cosine')
         lr_scheduler_min_lr = filtered_params.pop('lr_scheduler_min_lr', 1e-6)
         
-        # self에 LR 스케줄러 파라미터 저장 (fallback용)
+        # self에 파라미터 저장
+        self.focal_alpha = focal_alpha
+        self.focal_gamma = focal_gamma
         self.lr_scheduler = lr_scheduler
         self.scheduler_type = scheduler_type
         self.lr_scheduler_min_lr = lr_scheduler_min_lr
         
-        print(f"🔧 CustomFocalDL _get_net: self에 LR 스케줄러 파라미터 저장됨")
+        print(f"🔧 CustomFocalDL _get_net: focal_alpha={focal_alpha}, focal_gamma={focal_gamma}")
         print(f"🔧 CustomFocalDL _get_net: lr_scheduler={lr_scheduler}, scheduler_type={scheduler_type}, min_lr={lr_scheduler_min_lr}")
         
-        # 부모 클래스의 기본 _get_net 호출 (필터링된 파라미터 사용)
-        model = super()._get_net(train_dataset, filtered_params)
+        # 람다 함수로 메서드를 덮어쓰지 않고, 인스턴스 변수로 저장
+        # self._get_default_loss_function = lambda: FocalLoss(alpha=focal_alpha, gamma=focal_gamma)
         
-        # 모델이 None이 아닌 경우에만 LR scheduler 파라미터 설정
-        if model is not None:
-            model.lr_scheduler = lr_scheduler
-            model.scheduler_type = scheduler_type
-            model.lr_scheduler_min_lr = lr_scheduler_min_lr
-            
-            print(f"🔧 CustomFocalDL _get_net: model에도 LR 스케줄러 파라미터 설정됨")
-        else:
-            print(f"⚠️ CustomFocalDL _get_net: model이 None입니다. self에만 LR scheduler 설정됨")
-        
-        return model
+        # 나머지 파라미터로 EmbedNet 생성
+        return super()._get_net(train_dataset, filtered_params)
     
     def _train_net(
         self,

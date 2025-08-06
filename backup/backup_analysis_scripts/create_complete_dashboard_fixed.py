@@ -1,0 +1,1028 @@
+import json
+import pandas as pd
+import numpy as np
+import optuna
+from datetime import datetime
+
+def load_studies():
+    """모든 Optuna study 로드"""
+    model_types = ['DCNV2', 'CUSTOM_FOCAL_DL', 'RF']
+    studies = {}
+    
+    for model_type in model_types:
+        try:
+            study = optuna.load_study(
+                study_name=f'{model_type}_hpo_study',
+                storage=f'sqlite:///optuna_studies/{model_type}_study.db'
+            )
+            studies[model_type] = study
+            print(f"✅ {model_type} study 로드 완료")
+        except Exception as e:
+            print(f"❌ {model_type} study 로드 실패: {e}")
+    
+    return studies
+
+def safe_json_dumps(obj):
+    """안전한 JSON 직렬화"""
+    return json.dumps(obj, ensure_ascii=False, default=str)
+
+def create_complete_dashboard_fixed(studies):
+    """완전한 대시보드 생성 (올바른 필터 시스템)"""
+    print("=== 완전한 대시보드 생성 (수정된 필터) ===")
+    
+    # HTML 시작
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🎯 Optuna HPO 완전한 대시보드 (수정된 필터)</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 1600px;
+                margin: 0 auto;
+                background-color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 2.5em;
+                font-weight: 300;
+            }
+            .header p {
+                margin: 10px 0 0 0;
+                opacity: 0.9;
+                font-size: 1.1em;
+            }
+            .content {
+                padding: 30px;
+            }
+            .section {
+                margin-bottom: 40px;
+                background-color: #fafafa;
+                border-radius: 8px;
+                padding: 25px;
+                border-left: 4px solid #667eea;
+            }
+            .section h2 {
+                color: #333;
+                margin-top: 0;
+                font-size: 1.8em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .model-section {
+                background-color: white;
+                border-radius: 8px;
+                padding: 25px;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .model-section h3 {
+                color: #667eea;
+                margin-top: 0;
+                font-size: 1.5em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .chart-container {
+                margin: 20px 0;
+                text-align: center;
+                border: 1px solid #eee;
+                border-radius: 8px;
+                padding: 20px;
+                background-color: #fafafa;
+                min-height: 400px;
+            }
+            .filter-panel {
+                background-color: #e8f4fd;
+                border: 1px solid #b3d9ff;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 15px 0;
+            }
+            .filter-panel h4 {
+                margin: 0 0 10px 0;
+                color: #333;
+            }
+            .filter-controls {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+            .filter-controls select, .filter-controls input, .filter-controls button {
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+            .filter-controls button {
+                background-color: #667eea;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+            .filter-controls button:hover {
+                background-color: #5a6fd8;
+            }
+            .filter-controls button.reset {
+                background-color: #dc3545;
+            }
+            .filter-controls button.reset:hover {
+                background-color: #c82333;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+            .stat-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+            }
+            .stat-card h4 {
+                margin: 0 0 10px 0;
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .stat-card .value {
+                font-size: 2em;
+                font-weight: bold;
+                margin: 0;
+            }
+            .summary-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+            .summary-table th, .summary-table td {
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            .summary-table th {
+                background-color: #667eea;
+                color: white;
+                font-weight: bold;
+            }
+            .summary-table tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            .summary-table tr:hover {
+                background-color: #f0f0f0;
+            }
+            .best-performance {
+                background-color: #ffd700 !important;
+                font-weight: bold;
+            }
+            .no-data {
+                text-align: center;
+                padding: 40px;
+                color: #666;
+                font-style: italic;
+            }
+            .debug-info {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 10px;
+                margin: 10px 0;
+                font-size: 0.9em;
+                color: #856404;
+            }
+            .footer {
+                background-color: #333;
+                color: white;
+                text-align: center;
+                padding: 20px;
+                margin-top: 40px;
+            }
+            .chart-type-filter {
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                padding: 10px;
+                margin: 10px 0;
+            }
+            .chart-type-filter label {
+                margin-right: 15px;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎯 Optuna HPO 완전한 대시보드 (수정된 필터)</h1>
+                <p>원래 차트 + 고급 시각화 + 올바른 필터 기능</p>
+                <p>생성 시간: """ + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + """</p>
+            </div>
+            
+            <div class="content">
+    """
+    
+    # 1. 전체 실험 요약 섹션
+    html_content += """
+                <div class="section">
+                    <h2>📊 전체 실험 요약</h2>
+    """
+    
+    # 통계 계산
+    total_trials = 0
+    best_performances = {}
+    for model_type, study in studies.items():
+        trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+        total_trials += len(trials)
+        if trials:
+            best_performances[model_type] = study.best_value
+    
+    if best_performances:
+        best_overall = max(best_performances.values())
+        best_model = max(best_performances, key=best_performances.get)
+        
+        html_content += f"""
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>총 Trial 수</h4>
+                            <div class="value">{total_trials}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">{best_overall:.4f}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>최고 모델</h4>
+                            <div class="value">{best_model}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>분석 모델 수</h4>
+                            <div class="value">{len(studies)}</div>
+                        </div>
+                    </div>
+        """
+    
+    # 모델별 성능 요약 테이블
+    html_content += """
+                    <h3>🏆 모델별 성능 요약</h3>
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th>모델</th>
+                                <th>최고 성능</th>
+                                <th>평균 성능</th>
+                                <th>표준편차</th>
+                                <th>성공률</th>
+                                <th>수렴 상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    """
+    
+    for model_type, study in studies.items():
+        trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+        if trials:
+            values = [t.value for t in trials]
+            best_val = study.best_value
+            mean_val = np.mean(values)
+            std_val = np.std(values)
+            success_rate = len(trials) / len(study.trials) * 100
+            
+            # 수렴성 분석
+            if len(values) >= 5:
+                recent_values = values[-5:]
+                improvement = recent_values[-1] - recent_values[0]
+                if improvement > 0.01:
+                    convergence = "개선 중"
+                elif abs(improvement) < 0.005:
+                    convergence = "수렴됨"
+                else:
+                    convergence = "불안정"
+            else:
+                convergence = "데이터 부족"
+            
+            row_class = "best-performance" if best_val == best_overall else ""
+            html_content += f"""
+                            <tr class="{row_class}">
+                                <td><strong>{model_type}</strong></td>
+                                <td>{best_val:.4f}</td>
+                                <td>{mean_val:.4f}</td>
+                                <td>{std_val:.4f}</td>
+                                <td>{success_rate:.1f}%</td>
+                                <td>{convergence}</td>
+                            </tr>
+            """
+    
+    html_content += """
+                        </tbody>
+                    </table>
+                </div>
+    """
+    
+    # 2. 각 모델별 완전한 분석
+    for model_type, study in studies.items():
+        html_content += f"""
+                <div class="model-section">
+                    <h3>🎯 {model_type} 완전한 분석</h3>
+        """
+        
+        # 기본 통계
+        trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
+        if trials:
+            values = [t.value for t in trials]
+            best_val = study.best_value
+            mean_val = np.mean(values)
+            std_val = np.std(values)
+            min_val = min(values)
+            max_val = max(values)
+            
+            html_content += f"""
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">{best_val:.4f}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">{mean_val:.4f}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">{std_val:.4f}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">{min_val:.4f} ~ {max_val:.4f}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: {len(trials)}개, 성능 범위: {min_val:.4f} ~ {max_val:.4f}
+                    </div>
+            """
+            
+            # 파라미터 목록 생성
+            if trials:
+                first_trial = trials[0]
+                param_names = list(first_trial.params.keys())
+                param_options = ""
+                for param in param_names:
+                    param_options += f'<option value="{param}">{param}</option>'
+                
+                # 수정된 필터 패널 (차트 타입별)
+                html_content += f"""
+                    <div class="filter-panel">
+                        <h4>🔍 {model_type} 고급 시각화 필터</h4>
+                        
+                        <div class="chart-type-filter">
+                            <label>📊 차트 타입:</label>
+                            <select id="{model_type.lower()}-chart-type" onchange="updateFilterOptions('{model_type}')">
+                                <option value="parallel">Parallel Coordinate (모든 파라미터)</option>
+                                <option value="contour">Contour Plot (2개 파라미터)</option>
+                                <option value="slice">Slice Plot (1개 파라미터)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-controls">
+                            <div id="{model_type.lower()}-parallel-controls" style="display: block;">
+                                <label>성능 범위:</label>
+                                <input type="range" id="{model_type.lower()}-performance-range" min="0" max="1" step="0.01" value="0.5">
+                                <span id="{model_type.lower()}-performance-value">0.50</span>
+                            </div>
+                            
+                            <div id="{model_type.lower()}-contour-controls" style="display: none;">
+                                <label>X축 파라미터:</label>
+                                <select id="{model_type.lower()}-x-param">{param_options}</select>
+                                <label>Y축 파라미터:</label>
+                                <select id="{model_type.lower()}-y-param">{param_options}</select>
+                            </div>
+                            
+                            <div id="{model_type.lower()}-slice-controls" style="display: none;">
+                                <label>파라미터:</label>
+                                <select id="{model_type.lower()}-slice-param">{param_options}</select>
+                            </div>
+                            
+                            <button onclick="applyAdvancedFilter('{model_type}')">필터 적용</button>
+                            <button class="reset" onclick="resetAdvancedFilter('{model_type}')">필터 초기화</button>
+                        </div>
+                    </div>
+                """
+            
+            # 1. 최적화 과정 차트 (원래 차트)
+            trial_numbers = [t.number for t in trials]
+            values = [t.value for t in trials]
+            
+            html_content += f"""
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_{model_type}"></div>
+                    </div>
+                    <script>
+                        try {{
+                            var data = [
+                                {{
+                                    x: {safe_json_dumps(trial_numbers)},
+                                    y: {safe_json_dumps(values)},
+                                    type: 'scatter',
+                                    mode: 'markers',
+                                    name: 'Trial 값',
+                                    marker: {{color: '#667eea', size: 8}}
+                                }}
+                            ];
+                            
+                            var layout = {{
+                                title: '{model_type} 최적화 과정',
+                                xaxis: {{title: 'Trial 번호'}},
+                                yaxis: {{title: '성능 값'}},
+                                height: 400
+                            }};
+                            
+                            Plotly.newPlot('history_{model_type}', data, layout);
+                            console.log('{model_type} 최적화 과정 차트 생성 성공');
+                        }} catch(e) {{
+                            console.error('{model_type} 최적화 과정 차트 오류:', e);
+                            document.getElementById('history_{model_type}').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                        }}
+                    </script>
+            """
+            
+            # 2. 파라미터 중요도 차트 (원래 차트)
+            try:
+                importance = optuna.importance.get_param_importances(study)
+                if importance:
+                    # 중요도 순으로 정렬 (높은 순)
+                    sorted_importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
+                    param_names = [item[0] for item in sorted_importance]
+                    importance_values = [item[1] for item in sorted_importance]
+                    importance_texts = [f'{v:.4f}' for v in importance_values]
+                    
+                    html_content += f"""
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_{model_type}"></div>
+                        </div>
+                        <script>
+                            try {{
+                                var data = [
+                                    {{
+                                        x: {safe_json_dumps(importance_values)},
+                                        y: {safe_json_dumps(param_names)},
+                                        type: 'bar',
+                                        orientation: 'h',
+                                        marker: {{color: '#667eea'}},
+                                        text: {safe_json_dumps(importance_texts)},
+                                        textposition: 'auto'
+                                    }}
+                                ];
+                                
+                                var layout = {{
+                                    title: '{model_type} 파라미터 중요도 (높은 순)',
+                                    xaxis: {{title: '중요도'}},
+                                    yaxis: {{title: '파라미터'}},
+                                    height: 400,
+                                    margin: {{l: 150, r: 50, t: 50, b: 50}}
+                                }};
+                                
+                                Plotly.newPlot('importance_{model_type}', data, layout);
+                                console.log('{model_type} 파라미터 중요도 차트 생성 성공');
+                            }} catch(e) {{
+                                console.error('{model_type} 파라미터 중요도 차트 오류:', e);
+                                document.getElementById('importance_{model_type}').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                            }}
+                        </script>
+                    """
+                else:
+                    html_content += f"""
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div class="no-data">파라미터 중요도를 계산할 수 없습니다. (데이터 부족)</div>
+                        </div>
+                    """
+            except Exception as e:
+                html_content += f"""
+                    <h4>🔍 파라미터 중요도</h4>
+                    <div class="chart-container">
+                        <div class="no-data">파라미터 중요도 계산 오류: {str(e)}</div>
+                    </div>
+                """
+            
+            # 3. 파라미터 상관관계 차트 (원래 차트)
+            try:
+                data = []
+                for trial in trials:
+                    row = {'value': trial.value}
+                    row.update(trial.params)
+                    data.append(row)
+                
+                df = pd.DataFrame(data)
+                numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                if 'value' in numeric_cols:
+                    numeric_cols.remove('value')
+                
+                if len(numeric_cols) >= 2:
+                    correlation_data = []
+                    for i, col1 in enumerate(numeric_cols):
+                        for j, col2 in enumerate(numeric_cols):
+                            if i < j:
+                                corr = df[col1].corr(df[col2])
+                                correlation_data.append({
+                                    'param1': col1,
+                                    'param2': col2,
+                                    'correlation': corr
+                                })
+                    
+                    if correlation_data:
+                        # 절댓값 기준으로 정렬 (높은 상관관계 순)
+                        correlation_data.sort(key=lambda x: abs(x['correlation']), reverse=True)
+                        top_correlations = correlation_data[:5]
+                        
+                        corr_params = [f"{item['param1']} vs {item['param2']}" for item in top_correlations]
+                        corr_values = [item['correlation'] for item in top_correlations]
+                        corr_texts = [f'{v:.4f}' for v in corr_values]
+                        
+                        html_content += f"""
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_{model_type}"></div>
+                            </div>
+                            <script>
+                                try {{
+                                    var data = [
+                                        {{
+                                            x: {safe_json_dumps(corr_params)},
+                                            y: {safe_json_dumps(corr_values)},
+                                            type: 'bar',
+                                            marker: {{color: '#667eea'}},
+                                            text: {safe_json_dumps(corr_texts)},
+                                            textposition: 'auto'
+                                        }}
+                                    ];
+                                    
+                                    var layout = {{
+                                        title: '{model_type} 파라미터 상관관계 (높은 순)',
+                                        xaxis: {{title: '파라미터 쌍'}},
+                                        yaxis: {{title: '상관계수'}},
+                                        height: 400,
+                                        margin: {{l: 200, r: 50, t: 50, b: 50}}
+                                    }};
+                                    
+                                    Plotly.newPlot('correlation_{model_type}', data, layout);
+                                    console.log('{model_type} 파라미터 상관관계 차트 생성 성공');
+                                }} catch(e) {{
+                                    console.error('{model_type} 파라미터 상관관계 차트 오류:', e);
+                                    document.getElementById('correlation_{model_type}').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                                }}
+                            </script>
+                        """
+                    else:
+                        html_content += f"""
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div class="no-data">상관관계를 계산할 수 없습니다. (충분한 파라미터 없음)</div>
+                            </div>
+                        """
+                else:
+                    html_content += f"""
+                        <h4>🔄 파라미터 상관관계</h4>
+                        <div class="chart-container">
+                            <div class="no-data">수치형 파라미터가 부족합니다. (필요: 2개, 현재: {len(numeric_cols)}개)</div>
+                        </div>
+                    """
+            except Exception as e:
+                html_content += f"""
+                    <h4>🔄 파라미터 상관관계</h4>
+                    <div class="chart-container">
+                        <div class="no-data">상관관계 계산 오류: {str(e)}</div>
+                    </div>
+                """
+            
+            # 4. Parallel Coordinate Plot (새로운 차트)
+            html_content += f"""
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-container">
+                        <div id="parallel_{model_type}"></div>
+                    </div>
+            """
+            
+            # 5. Contour Plot (새로운 차트)
+            html_content += f"""
+                    <h4>📊 Contour Plot</h4>
+                    <div class="chart-container">
+                        <div id="contour_{model_type}"></div>
+                    </div>
+            """
+            
+            # 6. Slice Plot (새로운 차트)
+            html_content += f"""
+                    <h4>📈 Slice Plot</h4>
+                    <div class="chart-container">
+                        <div id="slice_{model_type}"></div>
+                    </div>
+            """
+            
+            # 차트 데이터 준비 및 초기화
+            if trials:
+                # Parallel Coordinate 데이터
+                parallel_data = []
+                for trial in trials:
+                    row = {'value': trial.value}
+                    row.update(trial.params)
+                    parallel_data.append(row)
+                
+                # 수치형 파라미터만 선택
+                df = pd.DataFrame(parallel_data)
+                numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                if 'value' in numeric_cols:
+                    numeric_cols.remove('value')
+                
+                if len(numeric_cols) >= 2:
+                    # Contour Plot용 데이터 (상위 2개 파라미터)
+                    top_params = numeric_cols[:2]
+                    
+                    html_content += f"""
+                        <script>
+                            // {model_type} 차트 데이터
+                            var {model_type.lower()}_data = {safe_json_dumps(parallel_data)};
+                            var {model_type.lower()}_numeric_cols = {safe_json_dumps(numeric_cols)};
+                            var {model_type.lower()}_top_params = {safe_json_dumps(top_params)};
+                            
+                            // 초기 차트 생성
+                            createParallelCoordinate('{model_type}');
+                            createContourPlot('{model_type}');
+                            createSlicePlot('{model_type}');
+                        </script>
+                    """
+                else:
+                    html_content += f"""
+                        <div class="no-data">수치형 파라미터가 부족하여 고급 시각화를 생성할 수 없습니다.</div>
+                    """
+        else:
+            html_content += """
+                <div class="chart-container">
+                    <div class="no-data">완료된 Trial이 없습니다!</div>
+                </div>
+            """
+        
+        html_content += """
+                </div>
+        """
+    
+    # JavaScript 함수들
+    html_content += """
+            </div>
+            
+            <div class="footer">
+                <p>🎯 Optuna HPO 완전한 대시보드 (수정된 필터) | 생성 시간: """ + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + """</p>
+            </div>
+        </div>
+        
+        <script>
+            // 필터 옵션 업데이트
+            function updateFilterOptions(modelType) {
+                const chartType = document.getElementById(modelType.toLowerCase() + '-chart-type').value;
+                const parallelControls = document.getElementById(modelType.toLowerCase() + '-parallel-controls');
+                const contourControls = document.getElementById(modelType.toLowerCase() + '-contour-controls');
+                const sliceControls = document.getElementById(modelType.toLowerCase() + '-slice-controls');
+                
+                // 모든 컨트롤 숨기기
+                parallelControls.style.display = 'none';
+                contourControls.style.display = 'none';
+                sliceControls.style.display = 'none';
+                
+                // 선택된 차트 타입에 따라 컨트롤 표시
+                switch(chartType) {
+                    case 'parallel':
+                        parallelControls.style.display = 'block';
+                        break;
+                    case 'contour':
+                        contourControls.style.display = 'block';
+                        break;
+                    case 'slice':
+                        sliceControls.style.display = 'block';
+                        break;
+                }
+                
+                console.log('필터 옵션 업데이트:', modelType, chartType);
+            }
+            
+            // 고급 필터 적용
+            function applyAdvancedFilter(modelType) {
+                const chartType = document.getElementById(modelType.toLowerCase() + '-chart-type').value;
+                console.log('고급 필터 적용:', modelType, chartType);
+                
+                switch(chartType) {
+                    case 'parallel':
+                        updateParallelCoordinate(modelType);
+                        break;
+                    case 'contour':
+                        updateContourPlot(modelType);
+                        break;
+                    case 'slice':
+                        updateSlicePlot(modelType);
+                        break;
+                }
+            }
+            
+            // 필터 초기화
+            function resetAdvancedFilter(modelType) {
+                console.log('필터 초기화:', modelType);
+                
+                // 차트 재생성
+                createParallelCoordinate(modelType);
+                createContourPlot(modelType);
+                createSlicePlot(modelType);
+                
+                // 필터 컨트롤 초기화
+                const performanceRange = document.getElementById(modelType.toLowerCase() + '-performance-range');
+                const performanceValue = document.getElementById(modelType.toLowerCase() + '-performance-value');
+                if (performanceRange && performanceValue) {
+                    performanceRange.value = 0.5;
+                    performanceValue.textContent = '0.50';
+                }
+            }
+            
+            // Parallel Coordinate Plot 생성
+            function createParallelCoordinate(modelType) {
+                const data = window[modelType.toLowerCase() + '_data'];
+                const numericCols = window[modelType.toLowerCase() + '_numeric_cols'];
+                
+                if (!data || !numericCols || numericCols.length < 2) {
+                    document.getElementById('parallel_' + modelType).innerHTML = '<div class="no-data">데이터 부족</div>';
+                    return;
+                }
+                
+                const dimensions = [];
+                dimensions.push({
+                    label: 'Performance',
+                    values: data.map(d => d.value)
+                });
+                
+                numericCols.forEach(col => {
+                    dimensions.push({
+                        label: col,
+                        values: data.map(d => d[col])
+                    });
+                });
+                
+                const plotData = [{
+                    type: 'parcoords',
+                    line: {
+                        color: data.map(d => d.value),
+                        colorscale: 'Viridis'
+                    },
+                    dimensions: dimensions
+                }];
+                
+                const layout = {
+                    title: modelType + ' Parallel Coordinate Plot',
+                    height: 400
+                };
+                
+                Plotly.newPlot('parallel_' + modelType, plotData, layout);
+                console.log('Parallel Coordinate 생성 성공:', modelType);
+            }
+            
+            // Contour Plot 생성
+            function createContourPlot(modelType) {
+                const data = window[modelType.toLowerCase() + '_data'];
+                const topParams = window[modelType.toLowerCase() + '_top_params'];
+                
+                if (!data || !topParams || topParams.length < 2) {
+                    document.getElementById('contour_' + modelType).innerHTML = '<div class="no-data">데이터 부족</div>';
+                    return;
+                }
+                
+                const x = data.map(d => d[topParams[0]]);
+                const y = data.map(d => d[topParams[1]]);
+                const z = data.map(d => d.value);
+                
+                const plotData = [{
+                    type: 'contour',
+                    x: x,
+                    y: y,
+                    z: z,
+                    colorscale: 'Viridis'
+                }];
+                
+                const layout = {
+                    title: modelType + ' Contour Plot (' + topParams[0] + ' vs ' + topParams[1] + ')',
+                    xaxis: {title: topParams[0]},
+                    yaxis: {title: topParams[1]},
+                    height: 400
+                };
+                
+                Plotly.newPlot('contour_' + modelType, plotData, layout);
+                console.log('Contour Plot 생성 성공:', modelType);
+            }
+            
+            // Slice Plot 생성
+            function createSlicePlot(modelType) {
+                const data = window[modelType.toLowerCase() + '_data'];
+                const numericCols = window[modelType.toLowerCase() + '_numeric_cols'];
+                
+                if (!data || !numericCols || numericCols.length === 0) {
+                    document.getElementById('slice_' + modelType).innerHTML = '<div class="no-data">데이터 부족</div>';
+                    return;
+                }
+                
+                const selectedParam = numericCols[0];
+                const x = data.map(d => d[selectedParam]);
+                const y = data.map(d => d.value);
+                
+                const plotData = [{
+                    type: 'scatter',
+                    mode: 'markers',
+                    x: x,
+                    y: y,
+                    marker: {
+                        color: y,
+                        colorscale: 'Viridis',
+                        size: 8
+                    }
+                }];
+                
+                const layout = {
+                    title: modelType + ' Slice Plot (' + selectedParam + ')',
+                    xaxis: {title: selectedParam},
+                    yaxis: {title: 'Performance'},
+                    height: 400
+                };
+                
+                Plotly.newPlot('slice_' + modelType, plotData, layout);
+                console.log('Slice Plot 생성 성공:', modelType);
+            }
+            
+            // 차트 업데이트 함수들 (필터 적용 시)
+            function updateParallelCoordinate(modelType) {
+                const performanceRange = document.getElementById(modelType.toLowerCase() + '-performance-range');
+                const performanceValue = document.getElementById(modelType.toLowerCase() + '-performance-value');
+                
+                if (performanceRange && performanceValue) {
+                    const threshold = parseFloat(performanceRange.value);
+                    performanceValue.textContent = threshold.toFixed(2);
+                    
+                    console.log('Parallel Coordinate 업데이트:', modelType, '성능 임계값:', threshold);
+                    
+                    // 필터링된 데이터로 차트 재생성
+                    const data = window[modelType.toLowerCase() + '_data'];
+                    const filteredData = data.filter(d => d.value >= threshold);
+                    
+                    if (filteredData.length > 0) {
+                        const numericCols = window[modelType.toLowerCase() + '_numeric_cols'];
+                        const dimensions = [];
+                        dimensions.push({
+                            label: 'Performance',
+                            values: filteredData.map(d => d.value)
+                        });
+                        
+                        numericCols.forEach(col => {
+                            dimensions.push({
+                                label: col,
+                                values: filteredData.map(d => d[col])
+                            });
+                        });
+                        
+                        const plotData = [{
+                            type: 'parcoords',
+                            line: {
+                                color: filteredData.map(d => d.value),
+                                colorscale: 'Viridis'
+                            },
+                            dimensions: dimensions
+                        }];
+                        
+                        const layout = {
+                            title: modelType + ' Parallel Coordinate Plot (필터링됨)',
+                            height: 400
+                        };
+                        
+                        Plotly.newPlot('parallel_' + modelType, plotData, layout);
+                        console.log('Parallel Coordinate 업데이트 성공:', modelType, '필터링된 데이터:', filteredData.length);
+                    } else {
+                        document.getElementById('parallel_' + modelType).innerHTML = '<div class="no-data">필터 조건에 맞는 데이터가 없습니다.</div>';
+                    }
+                }
+            }
+            
+            function updateContourPlot(modelType) {
+                const xParam = document.getElementById(modelType.toLowerCase() + '-x-param').value;
+                const yParam = document.getElementById(modelType.toLowerCase() + '-y-param').value;
+                
+                console.log('Contour Plot 업데이트:', modelType, 'X:', xParam, 'Y:', yParam);
+                
+                const data = window[modelType.toLowerCase() + '_data'];
+                const x = data.map(d => d[xParam]);
+                const y = data.map(d => d[yParam]);
+                const z = data.map(d => d.value);
+                
+                const plotData = [{
+                    type: 'contour',
+                    x: x,
+                    y: y,
+                    z: z,
+                    colorscale: 'Viridis'
+                }];
+                
+                const layout = {
+                    title: modelType + ' Contour Plot (' + xParam + ' vs ' + yParam + ')',
+                    xaxis: {title: xParam},
+                    yaxis: {title: yParam},
+                    height: 400
+                };
+                
+                Plotly.newPlot('contour_' + modelType, plotData, layout);
+                console.log('Contour Plot 업데이트 성공:', modelType);
+            }
+            
+            function updateSlicePlot(modelType) {
+                const sliceParam = document.getElementById(modelType.toLowerCase() + '-slice-param').value;
+                
+                console.log('Slice Plot 업데이트:', modelType, '파라미터:', sliceParam);
+                
+                const data = window[modelType.toLowerCase() + '_data'];
+                const x = data.map(d => d[sliceParam]);
+                const y = data.map(d => d.value);
+                
+                const plotData = [{
+                    type: 'scatter',
+                    mode: 'markers',
+                    x: x,
+                    y: y,
+                    marker: {
+                        color: y,
+                        colorscale: 'Viridis',
+                        size: 8
+                    }
+                }];
+                
+                const layout = {
+                    title: modelType + ' Slice Plot (' + sliceParam + ')',
+                    xaxis: {title: sliceParam},
+                    yaxis: {title: 'Performance'},
+                    height: 400
+                };
+                
+                Plotly.newPlot('slice_' + modelType, plotData, layout);
+                console.log('Slice Plot 업데이트 성공:', modelType);
+            }
+            
+            // 페이지 로드 완료 후 초기화
+            window.addEventListener('load', function() {
+                console.log('완전한 대시보드 (수정된 필터) 로드 완료');
+            });
+        </script>
+    </body>
+    </html>
+    """
+    
+    # HTML 파일 저장
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"optuna_complete_dashboard_fixed_{timestamp}.html"
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    
+    print(f"✅ 수정된 완전한 대시보드가 '{filename}'에 저장되었습니다!")
+    return filename
+
+if __name__ == "__main__":
+    # 모든 study 로드
+    studies = load_studies()
+    
+    if not studies:
+        print("❌ 로드할 study가 없습니다!")
+    else:
+        # 수정된 완전한 대시보드 생성
+        dashboard_file = create_complete_dashboard_fixed(studies)
+        
+        print("\n🎉 수정된 완전한 대시보드 생성 완료!")
+        print("📋 포함된 모든 기능:")
+        print("  ✅ 원래 차트들: 최적화 과정, 파라미터 중요도, 파라미터 상관관계")
+        print("  ✅ 새로운 차트들: Parallel Coordinate, Contour Plot, Slice Plot")
+        print("  ✅ 차트 타입별 맞춤형 필터 시스템")
+        print("  ✅ Parallel Coordinate: 성능 범위 필터")
+        print("  ✅ Contour Plot: X축/Y축 파라미터 선택")
+        print("  ✅ Slice Plot: 단일 파라미터 선택")
+        print(f"\n📂 파일 위치: {dashboard_file}")
+        print("🌐 웹 브라우저에서 열어서 모든 기능을 확인하세요!") 

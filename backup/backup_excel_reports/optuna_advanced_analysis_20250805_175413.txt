@@ -1,0 +1,50 @@
+=== Optuna 고급 분석 리포트 ===
+
+1. 파라미터 중요도 분석
+==================================================
+
+DCNV2:
+  num_layers: 0.6279
+  learning_rate: 0.1896
+  num_epochs: 0.0842
+  dropout_prob: 0.0389
+  weight_decay: 0.0383
+  hidden_size: 0.0211
+
+CUSTOM_FOCAL_DL:
+  focal_alpha: 0.5790
+  learning_rate: 0.2185
+  weight_decay: 0.0730
+  num_epochs: 0.0645
+  hidden_size: 0.0472
+  focal_gamma: 0.0159
+  num_layers: 0.0018
+  dropout_prob: 0.0001
+
+RF:
+  min_samples_leaf: 0.5398
+  n_estimators: 0.2302
+  max_depth: 0.1372
+  min_samples_split: 0.0928
+
+
+2. 최적화 과정 분석
+==================================================
+
+DCNV2:
+  최고 성능: 0.9747
+  평균 성능: 0.9121
+  표준편차: 0.0789
+  수렴 상태: 불안정
+
+CUSTOM_FOCAL_DL:
+  최고 성능: 0.9811
+  평균 성능: 0.8915
+  표준편차: 0.1699
+  수렴 상태: 수렴됨
+
+RF:
+  최고 성능: 0.9747
+  평균 성능: 0.9615
+  표준편차: 0.0154
+  수렴 상태: 불안정

@@ -1,0 +1,1186 @@
+
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🎯 Optuna HPO 통합 DB 대시보드 (상관관계 개선)</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 1800px;
+                margin: 0 auto;
+                background-color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 2.5em;
+                font-weight: 300;
+            }
+            .header p {
+                margin: 10px 0 0 0;
+                opacity: 0.9;
+                font-size: 1.1em;
+            }
+            .content {
+                padding: 30px;
+            }
+            .section {
+                margin-bottom: 40px;
+                background-color: #fafafa;
+                border-radius: 8px;
+                padding: 25px;
+                border-left: 4px solid #667eea;
+            }
+            .section h2 {
+                color: #333;
+                margin-top: 0;
+                font-size: 1.8em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .model-section {
+                background-color: white;
+                border-radius: 8px;
+                padding: 25px;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .model-section h3 {
+                color: #667eea;
+                margin-top: 0;
+                font-size: 1.5em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .chart-row {
+                display: flex;
+                gap: 20px;
+                margin: 20px 0;
+                align-items: flex-start;
+            }
+            .chart-container {
+                flex: 1;
+                border: 1px solid #eee;
+                border-radius: 8px;
+                padding: 20px;
+                background-color: #fafafa;
+                min-height: 400px;
+            }
+            .filter-panel {
+                width: 300px;
+                background-color: #e8f4fd;
+                border: 1px solid #b3d9ff;
+                border-radius: 8px;
+                padding: 15px;
+                height: fit-content;
+            }
+            .filter-panel h4 {
+                margin: 0 0 15px 0;
+                color: #333;
+                font-size: 1.1em;
+            }
+            .filter-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .filter-controls select, .filter-controls input, .filter-controls button {
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .filter-controls button {
+                background-color: #667eea;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.3s;
+                margin-top: 10px;
+            }
+            .filter-controls button:hover {
+                background-color: #5a6fd8;
+            }
+            .filter-controls button.reset {
+                background-color: #dc3545;
+            }
+            .filter-controls button.reset:hover {
+                background-color: #c82333;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+            .stat-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+            }
+            .stat-card h4 {
+                margin: 0 0 10px 0;
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .stat-card .value {
+                font-size: 2em;
+                font-weight: bold;
+                margin: 0;
+            }
+            .summary-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+            .summary-table th, .summary-table td {
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            .summary-table th {
+                background-color: #667eea;
+                color: white;
+                font-weight: bold;
+            }
+            .summary-table tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            .summary-table tr:hover {
+                background-color: #f0f0f0;
+            }
+            .best-performance {
+                background-color: #ffd700 !important;
+                font-weight: bold;
+            }
+            .no-data {
+                text-align: center;
+                padding: 40px;
+                color: #666;
+                font-style: italic;
+            }
+            .debug-info {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 10px;
+                margin: 10px 0;
+                font-size: 0.9em;
+                color: #856404;
+            }
+            .recommendations {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 8px;
+                padding: 25px;
+                margin: 20px 0;
+            }
+            .recommendations h3 {
+                margin-top: 0;
+                font-size: 1.5em;
+                border-bottom: 2px solid rgba(255,255,255,0.3);
+                padding-bottom: 10px;
+            }
+            .recommendations h4 {
+                color: #ffd700;
+                margin: 20px 0 10px 0;
+                font-size: 1.2em;
+            }
+            .recommendations ul {
+                margin: 10px 0;
+                padding-left: 20px;
+            }
+            .recommendations li {
+                margin: 8px 0;
+                line-height: 1.6;
+            }
+            .criteria-section {
+                background-color: #e8f4fd;
+                border: 1px solid #b3d9ff;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 15px 0;
+                color: #0f5132;
+            }
+            .criteria-section h4 {
+                color: #0f5132;
+                margin-top: 0;
+            }
+            .criteria-section li {
+                margin: 8px 0;
+                line-height: 1.5;
+            }
+            .db-info {
+                background-color: #d4edda;
+                border: 1px solid #c3e6cb;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 20px 0;
+                color: #155724;
+            }
+            .db-info h4 {
+                margin: 0 0 10px 0;
+                color: #0f5132;
+            }
+            .footer {
+                background-color: #333;
+                color: white;
+                text-align: center;
+                padding: 20px;
+                margin-top: 40px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎯 Optuna HPO 통합 DB 대시보드 (상관관계 개선)</h1>
+                <p>all_studies.db 기반 | 개선된 파라미터 상관관계 차트 + 모든 기능</p>
+                <p>생성 시간: 2025-08-06 15:41:07</p>
+            </div>
+            
+            <div class="content">
+    
+                <div class="db-info">
+                    <h4>📂 통합 DB 정보</h4>
+                    <p><strong>DB 파일:</strong> optuna_studies/all_studies.db</p>
+                    <p><strong>저장된 Study:</strong> DCNV2_hpo_study, DCNV2_FUXICTR_hpo_study, CUSTOM_FOCAL_DL_hpo_study, CUSTOM_NN_TORCH_hpo_study, RF_hpo_study</p>
+                    <p><strong>총 Study 수:</strong> 5개</p>
+                    <p><strong>개선사항:</strong> 파라미터 상관관계 명확한 표시 + 강도별 색상 구분</p>
+                </div>
+    
+                <div class="section">
+                    <h2>📊 전체 실험 요약</h2>
+    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>총 Trial 수</h4>
+                            <div class="value">120</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>최고 모델</h4>
+                            <div class="value">DCNV2_FUXICTR</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>분석 모델 수</h4>
+                            <div class="value">5</div>
+                        </div>
+                    </div>
+        
+                    <h3>🏆 모델별 성능 요약</h3>
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th>모델</th>
+                                <th>최고 성능</th>
+                                <th>평균 성능</th>
+                                <th>표준편차</th>
+                                <th>성공률</th>
+                                <th>수렴 상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    
+                            <tr class="">
+                                <td><strong>DCNV2</strong></td>
+                                <td>0.9747</td>
+                                <td>0.8925</td>
+                                <td>0.1313</td>
+                                <td>100.0%</td>
+                                <td>불안정</td>
+                            </tr>
+            
+                            <tr class="best-performance">
+                                <td><strong>DCNV2_FUXICTR</strong></td>
+                                <td>0.9811</td>
+                                <td>0.9708</td>
+                                <td>0.0074</td>
+                                <td>100.0%</td>
+                                <td>불안정</td>
+                            </tr>
+            
+                            <tr class="best-performance">
+                                <td><strong>CUSTOM_FOCAL_DL</strong></td>
+                                <td>0.9811</td>
+                                <td>0.9196</td>
+                                <td>0.1444</td>
+                                <td>100.0%</td>
+                                <td>수렴됨</td>
+                            </tr>
+            
+                            <tr class="best-performance">
+                                <td><strong>CUSTOM_NN_TORCH</strong></td>
+                                <td>0.9811</td>
+                                <td>0.9760</td>
+                                <td>0.0042</td>
+                                <td>100.0%</td>
+                                <td>불안정</td>
+                            </tr>
+            
+                            <tr class="">
+                                <td><strong>RF</strong></td>
+                                <td>0.9747</td>
+                                <td>0.9613</td>
+                                <td>0.0157</td>
+                                <td>100.0%</td>
+                                <td>불안정</td>
+                            </tr>
+            
+                        </tbody>
+                    </table>
+                </div>
+    
+                <div class="model-section">
+                    <h3>🎯 DCNV2 완전한 분석 (통합 DB)</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9747</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.8925</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.1313</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.5493 ~ 0.9747</div>
+                        </div>
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="optimization_DCNV2" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🎯 파라미터 중요도</h4>
+                    <div class="chart-container">
+                        <div id="importance_DCNV2" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🔗 파라미터 상관관계 (개선됨)</h4>
+                    <div class="chart-container">
+                        <div id="correlation_DCNV2" style="height: 500px;"></div>
+                    </div>
+        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="parallel_DCNV2" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>🎚️ 성능 범위 필터</h4>
+                            <div class="filter-controls">
+                                <label>최소값: <span id="dcnv2-parallel-min-value">0.50</span></label>
+                                <input type="range" id="dcnv2-parallel-min" min="0" max="1" step="0.01" value="0.5">
+                                <label>최대값: <span id="dcnv2-parallel-max-value">1.00</span></label>
+                                <input type="range" id="dcnv2-parallel-max" min="0" max="1" step="0.01" value="1.0">
+                                <button onclick="createParallelCoordinate('DCNV2')">필터 적용</button>
+                                <button class="reset" onclick="resetParallelCoordinate('DCNV2')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🌐 Contour Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="contour_DCNV2" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>📊 축 선택</h4>
+                            <div class="filter-controls">
+                                <label>X축 파라미터:</label>
+                                <select id="dcnv2-contour-x">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <label>Y축 파라미터:</label>
+                                <select id="dcnv2-contour-y">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <button onclick="createContourPlot('DCNV2')">차트 생성</button>
+                                <button class="reset" onclick="resetContourPlot('DCNV2')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🔍 Slice Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="slice_DCNV2" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>⚙️ 파라미터 선택</h4>
+                            <div class="filter-controls">
+                                <label>파라미터:</label>
+                                <select id="dcnv2-slice-param">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <label>성능 임계값: <span id="dcnv2-slice-range-value">0.50</span></label>
+                                <input type="range" id="dcnv2-slice-range" min="0" max="1" step="0.01" value="0.5">
+                                <button onclick="createSlicePlot('DCNV2')">차트 생성</button>
+                                <button class="reset" onclick="resetSlicePlot('DCNV2')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 DCNV2_FUXICTR 완전한 분석 (통합 DB)</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9708</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0074</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.9548 ~ 0.9811</div>
+                        </div>
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="optimization_DCNV2_FUXICTR" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🎯 파라미터 중요도</h4>
+                    <div class="chart-container">
+                        <div id="importance_DCNV2_FUXICTR" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🔗 파라미터 상관관계 (개선됨)</h4>
+                    <div class="chart-container">
+                        <div id="correlation_DCNV2_FUXICTR" style="height: 500px;"></div>
+                    </div>
+        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="parallel_DCNV2_FUXICTR" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>🎚️ 성능 범위 필터</h4>
+                            <div class="filter-controls">
+                                <label>최소값: <span id="dcnv2_fuxictr-parallel-min-value">0.50</span></label>
+                                <input type="range" id="dcnv2_fuxictr-parallel-min" min="0" max="1" step="0.01" value="0.5">
+                                <label>최대값: <span id="dcnv2_fuxictr-parallel-max-value">1.00</span></label>
+                                <input type="range" id="dcnv2_fuxictr-parallel-max" min="0" max="1" step="0.01" value="1.0">
+                                <button onclick="createParallelCoordinate('DCNV2_FUXICTR')">필터 적용</button>
+                                <button class="reset" onclick="resetParallelCoordinate('DCNV2_FUXICTR')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🌐 Contour Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="contour_DCNV2_FUXICTR" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>📊 축 선택</h4>
+                            <div class="filter-controls">
+                                <label>X축 파라미터:</label>
+                                <select id="dcnv2_fuxictr-contour-x">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <label>Y축 파라미터:</label>
+                                <select id="dcnv2_fuxictr-contour-y">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <button onclick="createContourPlot('DCNV2_FUXICTR')">차트 생성</button>
+                                <button class="reset" onclick="resetContourPlot('DCNV2_FUXICTR')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🔍 Slice Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="slice_DCNV2_FUXICTR" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>⚙️ 파라미터 선택</h4>
+                            <div class="filter-controls">
+                                <label>파라미터:</label>
+                                <select id="dcnv2_fuxictr-slice-param">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <label>성능 임계값: <span id="dcnv2_fuxictr-slice-range-value">0.50</span></label>
+                                <input type="range" id="dcnv2_fuxictr-slice-range" min="0" max="1" step="0.01" value="0.5">
+                                <button onclick="createSlicePlot('DCNV2_FUXICTR')">차트 생성</button>
+                                <button class="reset" onclick="resetSlicePlot('DCNV2_FUXICTR')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 CUSTOM_FOCAL_DL 완전한 분석 (통합 DB)</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9196</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.1444</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.5517 ~ 0.9811</div>
+                        </div>
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="optimization_CUSTOM_FOCAL_DL" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🎯 파라미터 중요도</h4>
+                    <div class="chart-container">
+                        <div id="importance_CUSTOM_FOCAL_DL" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🔗 파라미터 상관관계 (개선됨)</h4>
+                    <div class="chart-container">
+                        <div id="correlation_CUSTOM_FOCAL_DL" style="height: 500px;"></div>
+                    </div>
+        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="parallel_CUSTOM_FOCAL_DL" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>🎚️ 성능 범위 필터</h4>
+                            <div class="filter-controls">
+                                <label>최소값: <span id="custom_focal_dl-parallel-min-value">0.50</span></label>
+                                <input type="range" id="custom_focal_dl-parallel-min" min="0" max="1" step="0.01" value="0.5">
+                                <label>최대값: <span id="custom_focal_dl-parallel-max-value">1.00</span></label>
+                                <input type="range" id="custom_focal_dl-parallel-max" min="0" max="1" step="0.01" value="1.0">
+                                <button onclick="createParallelCoordinate('CUSTOM_FOCAL_DL')">필터 적용</button>
+                                <button class="reset" onclick="resetParallelCoordinate('CUSTOM_FOCAL_DL')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🌐 Contour Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="contour_CUSTOM_FOCAL_DL" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>📊 축 선택</h4>
+                            <div class="filter-controls">
+                                <label>X축 파라미터:</label>
+                                <select id="custom_focal_dl-contour-x">
+        <option value="num_layers">num_layers</option><option value="focal_gamma">focal_gamma</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option><option value="focal_alpha">focal_alpha</option>
+                                </select>
+                                <label>Y축 파라미터:</label>
+                                <select id="custom_focal_dl-contour-y">
+        <option value="num_layers">num_layers</option><option value="focal_gamma">focal_gamma</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option><option value="focal_alpha">focal_alpha</option>
+                                </select>
+                                <button onclick="createContourPlot('CUSTOM_FOCAL_DL')">차트 생성</button>
+                                <button class="reset" onclick="resetContourPlot('CUSTOM_FOCAL_DL')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🔍 Slice Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="slice_CUSTOM_FOCAL_DL" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>⚙️ 파라미터 선택</h4>
+                            <div class="filter-controls">
+                                <label>파라미터:</label>
+                                <select id="custom_focal_dl-slice-param">
+        <option value="num_layers">num_layers</option><option value="focal_gamma">focal_gamma</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option><option value="focal_alpha">focal_alpha</option>
+                                </select>
+                                <label>성능 임계값: <span id="custom_focal_dl-slice-range-value">0.50</span></label>
+                                <input type="range" id="custom_focal_dl-slice-range" min="0" max="1" step="0.01" value="0.5">
+                                <button onclick="createSlicePlot('CUSTOM_FOCAL_DL')">차트 생성</button>
+                                <button class="reset" onclick="resetSlicePlot('CUSTOM_FOCAL_DL')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 CUSTOM_NN_TORCH 완전한 분석 (통합 DB)</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9760</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0042</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.9682 ~ 0.9811</div>
+                        </div>
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="optimization_CUSTOM_NN_TORCH" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🎯 파라미터 중요도</h4>
+                    <div class="chart-container">
+                        <div id="importance_CUSTOM_NN_TORCH" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🔗 파라미터 상관관계 (개선됨)</h4>
+                    <div class="chart-container">
+                        <div id="correlation_CUSTOM_NN_TORCH" style="height: 500px;"></div>
+                    </div>
+        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="parallel_CUSTOM_NN_TORCH" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>🎚️ 성능 범위 필터</h4>
+                            <div class="filter-controls">
+                                <label>최소값: <span id="custom_nn_torch-parallel-min-value">0.50</span></label>
+                                <input type="range" id="custom_nn_torch-parallel-min" min="0" max="1" step="0.01" value="0.5">
+                                <label>최대값: <span id="custom_nn_torch-parallel-max-value">1.00</span></label>
+                                <input type="range" id="custom_nn_torch-parallel-max" min="0" max="1" step="0.01" value="1.0">
+                                <button onclick="createParallelCoordinate('CUSTOM_NN_TORCH')">필터 적용</button>
+                                <button class="reset" onclick="resetParallelCoordinate('CUSTOM_NN_TORCH')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🌐 Contour Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="contour_CUSTOM_NN_TORCH" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>📊 축 선택</h4>
+                            <div class="filter-controls">
+                                <label>X축 파라미터:</label>
+                                <select id="custom_nn_torch-contour-x">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <label>Y축 파라미터:</label>
+                                <select id="custom_nn_torch-contour-y">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <button onclick="createContourPlot('CUSTOM_NN_TORCH')">차트 생성</button>
+                                <button class="reset" onclick="resetContourPlot('CUSTOM_NN_TORCH')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🔍 Slice Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="slice_CUSTOM_NN_TORCH" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>⚙️ 파라미터 선택</h4>
+                            <div class="filter-controls">
+                                <label>파라미터:</label>
+                                <select id="custom_nn_torch-slice-param">
+        <option value="num_layers">num_layers</option><option value="dropout_prob">dropout_prob</option><option value="num_epochs">num_epochs</option><option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="hidden_size">hidden_size</option>
+                                </select>
+                                <label>성능 임계값: <span id="custom_nn_torch-slice-range-value">0.50</span></label>
+                                <input type="range" id="custom_nn_torch-slice-range" min="0" max="1" step="0.01" value="0.5">
+                                <button onclick="createSlicePlot('CUSTOM_NN_TORCH')">차트 생성</button>
+                                <button class="reset" onclick="resetSlicePlot('CUSTOM_NN_TORCH')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 RF 완전한 분석 (통합 DB)</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9747</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9613</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0157</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.8993 ~ 0.9747</div>
+                        </div>
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="optimization_RF" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🎯 파라미터 중요도</h4>
+                    <div class="chart-container">
+                        <div id="importance_RF" style="height: 400px;"></div>
+                    </div>
+        
+                    <h4>🔗 파라미터 상관관계 (개선됨)</h4>
+                    <div class="chart-container">
+                        <div id="correlation_RF" style="height: 500px;"></div>
+                    </div>
+        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="parallel_RF" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>🎚️ 성능 범위 필터</h4>
+                            <div class="filter-controls">
+                                <label>최소값: <span id="rf-parallel-min-value">0.50</span></label>
+                                <input type="range" id="rf-parallel-min" min="0" max="1" step="0.01" value="0.5">
+                                <label>최대값: <span id="rf-parallel-max-value">1.00</span></label>
+                                <input type="range" id="rf-parallel-max" min="0" max="1" step="0.01" value="1.0">
+                                <button onclick="createParallelCoordinate('RF')">필터 적용</button>
+                                <button class="reset" onclick="resetParallelCoordinate('RF')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🌐 Contour Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="contour_RF" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>📊 축 선택</h4>
+                            <div class="filter-controls">
+                                <label>X축 파라미터:</label>
+                                <select id="rf-contour-x">
+        <option value="min_samples_split">min_samples_split</option><option value="min_samples_leaf">min_samples_leaf</option><option value="max_depth">max_depth</option><option value="n_estimators">n_estimators</option>
+                                </select>
+                                <label>Y축 파라미터:</label>
+                                <select id="rf-contour-y">
+        <option value="min_samples_split">min_samples_split</option><option value="min_samples_leaf">min_samples_leaf</option><option value="max_depth">max_depth</option><option value="n_estimators">n_estimators</option>
+                                </select>
+                                <button onclick="createContourPlot('RF')">차트 생성</button>
+                                <button class="reset" onclick="resetContourPlot('RF')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <h4>🔍 Slice Plot</h4>
+                    <div class="chart-row">
+                        <div class="chart-container">
+                            <div id="slice_RF" style="height: 400px;"></div>
+                        </div>
+                        <div class="filter-panel">
+                            <h4>⚙️ 파라미터 선택</h4>
+                            <div class="filter-controls">
+                                <label>파라미터:</label>
+                                <select id="rf-slice-param">
+        <option value="min_samples_split">min_samples_split</option><option value="min_samples_leaf">min_samples_leaf</option><option value="max_depth">max_depth</option><option value="n_estimators">n_estimators</option>
+                                </select>
+                                <label>성능 임계값: <span id="rf-slice-range-value">0.50</span></label>
+                                <input type="range" id="rf-slice-range" min="0" max="1" step="0.01" value="0.5">
+                                <button onclick="createSlicePlot('RF')">차트 생성</button>
+                                <button class="reset" onclick="resetSlicePlot('RF')">리셋</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="recommendations">
+                    <h3>💡 다음 실험을 위한 권장사항 (통합 DB 기반)</h3>
+                    
+    <div class="criteria-section">
+        <h4>📋 권장사항 기준 설명</h4>
+        <ul>
+            <li><strong>변동성 분석 (표준편차 > 0.05):</strong> 성능이 불안정하면 더 많은 trial 필요</li>
+            <li><strong>수렴성 분석 (최근 5개 trial):</strong> 개선 추세, 수렴, 불안정 상태 판단</li>
+            <li><strong>파라미터 중요도:</strong> 가장 영향력 있는 파라미터 우선 탐색</li>
+            <li><strong>상관관계 분석:</strong> 강한 상관관계가 있는 파라미터는 함께 조정</li>
+        </ul>
+    </div>
+    
+            <h4>🎯 DCNV2</h4>
+            <ul>
+            <li>📈 더 많은 trial 필요 (높은 변동성: 0.1313)</li><li>🔧 더 세밀한 파라미터 탐색 필요</li><li>🎯 가장 중요한 파라미터: learning_rate (중요도: 0.6378)</li></ul>
+            <h4>🎯 DCNV2_FUXICTR</h4>
+            <ul>
+            <li>✅ 현재 설정으로 충분히 최적화됨</li><li>🔧 더 세밀한 파라미터 탐색 필요</li><li>🎯 가장 중요한 파라미터: num_epochs (중요도: 0.2753)</li></ul>
+            <h4>🎯 CUSTOM_FOCAL_DL</h4>
+            <ul>
+            <li>📈 더 많은 trial 필요 (높은 변동성: 0.1444)</li><li>🎯 가장 중요한 파라미터: focal_alpha (중요도: 0.8905)</li></ul>
+            <h4>🎯 CUSTOM_NN_TORCH</h4>
+            <ul>
+            <li>✅ 현재 설정으로 충분히 최적화됨</li><li>🔧 더 세밀한 파라미터 탐색 필요</li><li>🎯 가장 중요한 파라미터: num_layers (중요도: 0.4812)</li></ul>
+            <h4>🎯 RF</h4>
+            <ul>
+            <li>✅ 현재 설정으로 충분히 최적화됨</li><li>🔧 더 세밀한 파라미터 탐색 필요</li><li>🎯 가장 중요한 파라미터: max_depth (중요도: 0.6779)</li></ul>
+                </div>
+    
+            </div>
+            
+            <div class="footer">
+                <p>🎯 Optuna HPO 통합 DB 대시보드 (상관관계 개선) | 생성 시간: 2025-08-06 15:41:07</p>
+                <p>📂 DB 파일: optuna_studies/all_studies.db</p>
+            </div>
+        </div>
+        
+        <script>
+            // 모든 데이터
+            const allData = {"DCNV2": {"trials": [{"trial_number": 0, "value": 0.948051948051948, "state": "COMPLETE", "learning_rate": 0.0019280536308945962, "weight_decay": 0.00014116113262610828, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 512, "num_epochs": 20}, {"trial_number": 1, "value": 0.9419354838709677, "state": "COMPLETE", "learning_rate": 0.0003876657462863213, "weight_decay": 1.5752332354236415e-05, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 2, "value": 0.9403973509933775, "state": "COMPLETE", "learning_rate": 0.0007055978100476074, "weight_decay": 0.0005935768548423661, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 512, "num_epochs": 25}, {"trial_number": 3, "value": 0.6031746031746031, "state": "COMPLETE", "learning_rate": 0.00013433405538597633, "weight_decay": 0.00085546890014355, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 4, "value": 0.5492957746478874, "state": "COMPLETE", "learning_rate": 0.00013573953249742214, "weight_decay": 0.00010557118413307944, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 15}, {"trial_number": 5, "value": 0.6307692307692307, "state": "COMPLETE", "learning_rate": 0.000368078944016486, "weight_decay": 0.00021054835922949678, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 6, "value": 0.9615384615384616, "state": "COMPLETE", "learning_rate": 0.0009996029635644388, "weight_decay": 6.206584556592737e-06, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 7, "value": 0.5797101449275363, "state": "COMPLETE", "learning_rate": 0.00019559660696308792, "weight_decay": 5.3797692964360156e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 20}, {"trial_number": 8, "value": 0.9615384615384616, "state": "COMPLETE", "learning_rate": 0.0005319026610605309, "weight_decay": 7.621363053113817e-06, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 15}, {"trial_number": 9, "value": 0.9620253164556962, "state": "COMPLETE", "learning_rate": 0.0036369095941885385, "weight_decay": 1.1201833237312125e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 10, "value": 0.9685534591194969, "state": "COMPLETE", "learning_rate": 0.009471074174674476, "weight_decay": 1.1561816910658608e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 11, "value": 0.967741935483871, "state": "COMPLETE", "learning_rate": 0.00788542001084659, "weight_decay": 1.1111079580236296e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 12, "value": 0.9559748427672956, "state": "COMPLETE", "learning_rate": 0.009760965776736776, "weight_decay": 1.0978270095253397e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 13, "value": 0.9615384615384616, "state": "COMPLETE", "learning_rate": 0.008614203354924802, "weight_decay": 1.0266112581737794e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 14, "value": 0.9559748427672956, "state": "COMPLETE", "learning_rate": 0.0035975021579285663, "weight_decay": 2.3966736891417277e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 15, "value": 0.9743589743589743, "state": "COMPLETE", "learning_rate": 0.0032417467084565063, "weight_decay": 2.8232598205753116e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 16, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.003850377465033593, "weight_decay": 2.947118272143681e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 17, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.0020946123585189784, "weight_decay": 2.9077606409183746e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 512, "num_epochs": 20}, {"trial_number": 18, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.005223635854509206, "weight_decay": 2.038031014373225e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 19, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.0017353626826865517, "weight_decay": 4.896120288939459e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 20, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.005581539108266189, "weight_decay": 1.8860560774848855e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 512, "num_epochs": 20}, {"trial_number": 21, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.002910667963713046, "weight_decay": 3.736895636104344e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 22, "value": 0.9570552147239264, "state": "COMPLETE", "learning_rate": 0.0059634464021303835, "weight_decay": 2.1320516361254233e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 23, "value": 0.7633587786259542, "state": "COMPLETE", "learning_rate": 0.0012606689098754661, "weight_decay": 3.995361046027093e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 24, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.004273064887098356, "weight_decay": 1.0689499728511937e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 25, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.0028229858061431332, "weight_decay": 1.0600965130572424e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 26, "value": 0.8805031446540881, "state": "COMPLETE", "learning_rate": 0.0024656681945665173, "weight_decay": 1.0154096141549659e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 27, "value": 0.7384615384615385, "state": "COMPLETE", "learning_rate": 0.0013464588522583345, "weight_decay": 1.9520451455284573e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 28, "value": 0.9487179487179487, "state": "COMPLETE", "learning_rate": 0.0042861675003107325, "weight_decay": 3.267018953520615e-05, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 512, "num_epochs": 15}, {"trial_number": 29, "value": 0.8662420382165605, "state": "COMPLETE", "learning_rate": 0.0016773679265176813, "weight_decay": 6.214634151786902e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15}], "importance": {"learning_rate": 0.6378493768542567, "hidden_size": 0.12541970744653425, "weight_decay": 0.0965570583462452, "num_epochs": 0.04812584868220667, "dropout_prob": 0.046228049033820606, "num_layers": 0.045819959636936594}, "correlation": {"learning_rate ↔ weight_decay": -0.3689585594685604, "learning_rate ↔ dropout_prob": -0.2998638417006691, "learning_rate ↔ num_layers": -0.4475191171225372, "learning_rate ↔ hidden_size": 0.1441853586259185, "learning_rate ↔ num_epochs": -0.033494818734720114, "weight_decay ↔ dropout_prob": 0.41217578292495405, "weight_decay ↔ num_layers": 0.09028676159758314, "weight_decay ↔ hidden_size": 0.15999153295382762, "weight_decay ↔ num_epochs": 0.5340514754995315, "dropout_prob ↔ num_layers": 0.37142857142857133, "dropout_prob ↔ hidden_size": 0.5105777660380575, "dropout_prob ↔ num_epochs": 0.4741046559307605, "num_layers ↔ hidden_size": -0.12156613477096637, "num_layers ↔ num_epochs": 0.2844627935584563, "hidden_size ↔ num_epochs": 0.08068909869778984}, "best_value": 0.9746835443037974, "param_names": ["num_layers", "dropout_prob", "num_epochs", "learning_rate", "weight_decay", "hidden_size"]}, "DCNV2_FUXICTR": {"trials": [{"trial_number": 0, "value": 0.9808917197452229, "state": "COMPLETE", "learning_rate": 0.004725433091437283, "weight_decay": 2.5569145884493408e-05, "dropout_prob": 0.2, "num_layers": 4, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 1, "value": 0.9548387096774194, "state": "COMPLETE", "learning_rate": 0.00025203556347774516, "weight_decay": 2.0521350954293413e-06, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 20}, {"trial_number": 2, "value": 0.9615384615384616, "state": "COMPLETE", "learning_rate": 0.003994704664397627, "weight_decay": 0.0007847528936750315, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 3, "value": 0.9808917197452229, "state": "COMPLETE", "learning_rate": 0.0009190569379717204, "weight_decay": 7.603006838634352e-06, "dropout_prob": 0.3, "num_layers": 5, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 4, "value": 0.9685534591194969, "state": "COMPLETE", "learning_rate": 0.00023667308875795844, "weight_decay": 3.6224103863720237e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 5, "value": 0.9615384615384616, "state": "COMPLETE", "learning_rate": 0.00021799370839404838, "weight_decay": 3.9693737482644154e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 512, "num_epochs": 25}, {"trial_number": 6, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.00019249975315573827, "weight_decay": 6.040700633849996e-05, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 128, "num_epochs": 15}, {"trial_number": 7, "value": 0.968944099378882, "state": "COMPLETE", "learning_rate": 0.008708285726564308, "weight_decay": 4.3522295469348405e-06, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 8, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.0005191735591372832, "weight_decay": 1.1085766058829384e-05, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 512, "num_epochs": 15}, {"trial_number": 9, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.0007129629871434183, "weight_decay": 0.00010299626181119867, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 20}, {"trial_number": 10, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.0028733494420722077, "weight_decay": 0.0002266285352520832, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 11, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.0017970875813183842, "weight_decay": 2.350710478976632e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 12, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.001387008859636364, "weight_decay": 1.4260733452516367e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 13, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.007413715254664987, "weight_decay": 2.279412627198295e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 14, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0018392068101300018, "weight_decay": 4.543238465339796e-05, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 25}], "importance": {"num_epochs": 0.27531624536791993, "weight_decay": 0.23419335394415933, "num_layers": 0.19263114956100078, "learning_rate": 0.14498720509429, "dropout_prob": 0.1145786576594166, "hidden_size": 0.038293388373213534}, "correlation": {"learning_rate ↔ weight_decay": 0.15300946646218708, "learning_rate ↔ dropout_prob": 0.029890505886218877, "learning_rate ↔ num_layers": -0.0028247446504888955, "learning_rate ↔ hidden_size": -0.21433963239900305, "learning_rate ↔ num_epochs": 0.2760028773239688, "weight_decay ↔ dropout_prob": -0.46954911359205354, "weight_decay ↔ num_layers": -0.21552180195116005, "weight_decay ↔ hidden_size": -0.0388472925100171, "weight_decay ↔ num_epochs": -0.47003818955210813, "dropout_prob ↔ num_layers": -0.17370208344491284, "dropout_prob ↔ hidden_size": 0.4218479169376454, "dropout_prob ↔ num_epochs": 0.007684127768066867, "num_layers ↔ hidden_size": -0.19642857142857137, "num_layers ↔ num_epochs": 0.06635609328057132, "hidden_size ↔ num_epochs": -0.17694958208152348}, "best_value": 0.9811320754716981, "param_names": ["num_layers", "dropout_prob", "num_epochs", "learning_rate", "weight_decay", "hidden_size"]}, "CUSTOM_FOCAL_DL": {"trials": [{"trial_number": 0, "value": 0.9743589743589743, "state": "COMPLETE", "learning_rate": 0.00018407181673242025, "weight_decay": 3.592748692735889e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 512, "num_epochs": 20, "focal_alpha": 0.5, "focal_gamma": 1.0}, {"trial_number": 1, "value": 0.5517241379310345, "state": "COMPLETE", "learning_rate": 0.00040246531387159973, "weight_decay": 0.0008319519889024385, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 256, "num_epochs": 20, "focal_alpha": 1.0, "focal_gamma": 1.0}, {"trial_number": 2, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.0004005033062141775, "weight_decay": 0.00033898577329956266, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 128, "num_epochs": 15, "focal_alpha": 0.75, "focal_gamma": 3.0}, {"trial_number": 3, "value": 0.5517241379310345, "state": "COMPLETE", "learning_rate": 0.0035963209501313747, "weight_decay": 4.946187547356171e-05, "dropout_prob": 0.3, "num_layers": 5, "hidden_size": 256, "num_epochs": 15, "focal_alpha": 1.0, "focal_gamma": 1.0}, {"trial_number": 4, "value": 0.5517241379310345, "state": "COMPLETE", "learning_rate": 0.00014950831375668588, "weight_decay": 9.418841477169263e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 1.0, "focal_gamma": 2.0}, {"trial_number": 5, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0006612684167639387, "weight_decay": 8.873642182432402e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 256, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 1.0}, {"trial_number": 6, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0007707555126077913, "weight_decay": 0.0003406075103496223, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 512, "num_epochs": 15, "focal_alpha": 0.5, "focal_gamma": 3.0}, {"trial_number": 7, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.006145382712193017, "weight_decay": 6.662974801588632e-05, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 512, "num_epochs": 15, "focal_alpha": 0.25, "focal_gamma": 2.0}, {"trial_number": 8, "value": 0.5517241379310345, "state": "COMPLETE", "learning_rate": 0.006127868205355922, "weight_decay": 0.00016192769835424249, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 256, "num_epochs": 15, "focal_alpha": 1.0, "focal_gamma": 3.0}, {"trial_number": 9, "value": 0.9743589743589743, "state": "COMPLETE", "learning_rate": 0.00011138005152094739, "weight_decay": 0.0003632586628532757, "dropout_prob": 0.2, "num_layers": 4, "hidden_size": 128, "num_epochs": 15, "focal_alpha": 0.5, "focal_gamma": 3.0}, {"trial_number": 10, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0017686207010846088, "weight_decay": 6.908068608688524e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 256, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 1.0}, {"trial_number": 11, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0010036414247374876, "weight_decay": 1.531948902963808e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.5, "focal_gamma": 3.0}, {"trial_number": 12, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.001039890599163382, "weight_decay": 1.5073787514332548e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"trial_number": 13, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.001850161749674603, "weight_decay": 1.1443771768384692e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 25, "focal_alpha": 0.75, "focal_gamma": 1.0}, {"trial_number": 14, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.00046493206803030365, "weight_decay": 1.858908768471865e-05, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 2.0}, {"trial_number": 15, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0010191510585614504, "weight_decay": 4.956567143832224e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.5, "focal_gamma": 3.0}, {"trial_number": 16, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.002017632817484524, "weight_decay": 1.467214869125863e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 256, "num_epochs": 25, "focal_alpha": 0.5, "focal_gamma": 1.0}, {"trial_number": 17, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0006477764030585863, "weight_decay": 2.194133752310991e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"trial_number": 18, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0002681824349491233, "weight_decay": 1.0368038850895918e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 20, "focal_alpha": 0.75, "focal_gamma": 1.0}, {"trial_number": 19, "value": 0.9685534591194969, "state": "COMPLETE", "learning_rate": 0.0031130066023347357, "weight_decay": 3.2805265863128214e-06, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 2.0}, {"trial_number": 20, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0010390026433403866, "weight_decay": 3.182072015065817e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.5, "focal_gamma": 3.0}, {"trial_number": 21, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0013036764522151903, "weight_decay": 1.1764177068350147e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"trial_number": 22, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0005788027705738108, "weight_decay": 1.5020076747551641e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"trial_number": 23, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.00028412456971067476, "weight_decay": 3.0982695129264347e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"trial_number": 24, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0013038652174393393, "weight_decay": 2.3323573591491073e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"trial_number": 25, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.0008464096028782627, "weight_decay": 1.0158581393080446e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20, "focal_alpha": 0.25, "focal_gamma": 1.0}, {"trial_number": 26, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0023805371535214766, "weight_decay": 7.078425738196687e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.5, "focal_gamma": 3.0}, {"trial_number": 27, "value": 0.9753086419753086, "state": "COMPLETE", "learning_rate": 0.0013647249419957517, "weight_decay": 3.531032221420919e-05, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 0.75, "focal_gamma": 3.0}, {"trial_number": 28, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.0005445557699546047, "weight_decay": 6.597997338054343e-06, "dropout_prob": 0.2, "num_layers": 4, "hidden_size": 128, "num_epochs": 25, "focal_alpha": 0.25, "focal_gamma": 2.0}, {"trial_number": 29, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.000316874637178445, "weight_decay": 2.2605377307121002e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 20, "focal_alpha": 0.5, "focal_gamma": 1.0}], "importance": {"focal_alpha": 0.8905473686938643, "learning_rate": 0.0625073829070975, "weight_decay": 0.031246852583683104, "hidden_size": 0.015646812972826954, "focal_gamma": 4.4086496747769964e-05, "num_epochs": 4.505471653989413e-06, "dropout_prob": 2.160729997513814e-06, "num_layers": 8.301441290097759e-07}, "correlation": {"learning_rate ↔ weight_decay": -0.11210747203754973, "learning_rate ↔ dropout_prob": 0.10974010802136579, "learning_rate ↔ num_layers": 0.0915427217741463, "learning_rate ↔ hidden_size": -0.031035114090485653, "learning_rate ↔ num_epochs": -0.3461776215249342, "learning_rate ↔ focal_alpha": 0.14895397979527522, "learning_rate ↔ focal_gamma": 0.012524388004794452, "weight_decay ↔ dropout_prob": 0.633627555907608, "weight_decay ↔ num_layers": -0.1597354205266118, "weight_decay ↔ hidden_size": -0.23161731306532812, "weight_decay ↔ num_epochs": -0.49963004802508926, "weight_decay ↔ focal_alpha": 0.46588242066131447, "weight_decay ↔ focal_gamma": 0.011102687807651605, "dropout_prob ↔ num_layers": -0.2674454964961253, "dropout_prob ↔ hidden_size": -0.16186247531914874, "dropout_prob ↔ num_epochs": -0.73330948989261, "dropout_prob ↔ focal_alpha": 0.4371522885184593, "dropout_prob ↔ focal_gamma": -0.07293968086257964, "num_layers ↔ hidden_size": 0.20915917427206737, "num_layers ↔ num_epochs": 0.31586157135224174, "num_layers ↔ focal_alpha": 0.07676198691990295, "num_layers ↔ focal_gamma": 0.0896551724137931, "hidden_size ↔ num_epochs": 0.21085102815597667, "hidden_size ↔ focal_alpha": -0.03057468275167896, "hidden_size ↔ focal_gamma": 0.36220247251992127, "num_epochs ↔ focal_alpha": -0.418189428718264, "num_epochs ↔ focal_gamma": 0.08474334841157702, "focal_alpha ↔ focal_gamma": -0.17123827851362966}, "best_value": 0.9811320754716981, "param_names": ["num_layers", "focal_gamma", "dropout_prob", "num_epochs", "learning_rate", "weight_decay", "hidden_size", "focal_alpha"]}, "CUSTOM_NN_TORCH": {"trials": [{"trial_number": 0, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.0016866869696185993, "weight_decay": 1.5029520929130176e-06, "dropout_prob": 0.3, "num_layers": 5, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 1, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.003412907813206934, "weight_decay": 0.00015385612664309473, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 2, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.004721954717152507, "weight_decay": 0.0008059441900036597, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 256, "num_epochs": 25}, {"trial_number": 3, "value": 0.9743589743589743, "state": "COMPLETE", "learning_rate": 0.00019076374891485327, "weight_decay": 7.871550901200054e-05, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 20}, {"trial_number": 4, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.009627502640396935, "weight_decay": 7.315579156327104e-06, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 5, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.005071514938026931, "weight_decay": 3.876165014002534e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 6, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.001843511317998453, "weight_decay": 2.4059477796155044e-06, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 256, "num_epochs": 20}, {"trial_number": 7, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.003645360213006851, "weight_decay": 0.00023338367646488672, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 20}, {"trial_number": 8, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.00017848967988330305, "weight_decay": 2.9398905947286375e-05, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 128, "num_epochs": 20}, {"trial_number": 9, "value": 0.9743589743589743, "state": "COMPLETE", "learning_rate": 0.0001563501649182452, "weight_decay": 0.00010136743871144638, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 256, "num_epochs": 15}, {"trial_number": 10, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0005411610578173507, "weight_decay": 1.0469858721181201e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 512, "num_epochs": 25}, {"trial_number": 11, "value": 0.9746835443037974, "state": "COMPLETE", "learning_rate": 0.009774411354950142, "weight_decay": 5.664632786009292e-06, "dropout_prob": 0.3, "num_layers": 5, "hidden_size": 512, "num_epochs": 15}, {"trial_number": 12, "value": 0.975, "state": "COMPLETE", "learning_rate": 0.0006234433393097557, "weight_decay": 8.207271226797743e-06, "dropout_prob": 0.1, "num_layers": 5, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 13, "value": 0.9811320754716981, "state": "COMPLETE", "learning_rate": 0.001210120579144917, "weight_decay": 8.590165643064571e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 128, "num_epochs": 25}, {"trial_number": 14, "value": 0.9681528662420382, "state": "COMPLETE", "learning_rate": 0.009862986595959595, "weight_decay": 1.2869638036538379e-06, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 512, "num_epochs": 15}], "importance": {"num_layers": 0.4812252594573017, "learning_rate": 0.21063555368655273, "weight_decay": 0.10916878614776108, "hidden_size": 0.09936311933052705, "num_epochs": 0.07791348826636404, "dropout_prob": 0.021693793111493453}, "correlation": {"learning_rate ↔ weight_decay": 0.03814989144689753, "learning_rate ↔ dropout_prob": 0.21602246217951604, "learning_rate ↔ num_layers": -0.06976120179855767, "learning_rate ↔ hidden_size": 0.5720981211174411, "learning_rate ↔ num_epochs": -0.46200108843733073, "weight_decay ↔ dropout_prob": -0.12510553331169297, "weight_decay ↔ num_layers": -0.45800210508335115, "weight_decay ↔ hidden_size": -0.10450764845109892, "weight_decay ↔ num_epochs": 0.2560124044168667, "dropout_prob ↔ num_layers": -0.10963225241337869, "dropout_prob ↔ hidden_size": -2.4845225669847565e-17, "dropout_prob ↔ num_epochs": -0.49793529744291104, "num_layers ↔ hidden_size": 0.3402069087198858, "num_layers ↔ num_epochs": -0.09960238411119945, "hidden_size ↔ num_epochs": -0.4066250303952221}, "best_value": 0.9811320754716981, "param_names": ["num_layers", "dropout_prob", "num_epochs", "learning_rate", "weight_decay", "hidden_size"]}, "RF": {"trials": [{"trial_number": 0, "value": 0.9554140127388535, "state": "COMPLETE", "n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 4}, {"trial_number": 1, "value": 0.9615384615384616, "state": "COMPLETE", "n_estimators": 50, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 4}, {"trial_number": 2, "value": 0.9615384615384616, "state": "COMPLETE", "n_estimators": 50, "max_depth": 15, "min_samples_split": 5, "min_samples_leaf": 4}, {"trial_number": 3, "value": 0.9487179487179487, "state": "COMPLETE", "n_estimators": 200, "max_depth": 5, "min_samples_split": 5, "min_samples_leaf": 4}, {"trial_number": 4, "value": 0.9487179487179487, "state": "COMPLETE", "n_estimators": 100, "max_depth": 5, "min_samples_split": 10, "min_samples_leaf": 1}, {"trial_number": 5, "value": 0.9554140127388535, "state": "COMPLETE", "n_estimators": 50, "max_depth": 15, "min_samples_split": 10, "min_samples_leaf": 2}, {"trial_number": 6, "value": 0.8993288590604027, "state": "COMPLETE", "n_estimators": 100, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 4}, {"trial_number": 7, "value": 0.9615384615384616, "state": "COMPLETE", "n_estimators": 50, "max_depth": 15, "min_samples_split": 5, "min_samples_leaf": 1}, {"trial_number": 8, "value": 0.9620253164556962, "state": "COMPLETE", "n_estimators": 100, "max_depth": 10, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 9, "value": 0.9271523178807947, "state": "COMPLETE", "n_estimators": 50, "max_depth": 5, "min_samples_split": 5, "min_samples_leaf": 1}, {"trial_number": 10, "value": 0.9554140127388535, "state": "COMPLETE", "n_estimators": 100, "max_depth": 10, "min_samples_split": 2, "min_samples_leaf": 2}, {"trial_number": 11, "value": 0.9620253164556962, "state": "COMPLETE", "n_estimators": 100, "max_depth": 10, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 12, "value": 0.9620253164556962, "state": "COMPLETE", "n_estimators": 100, "max_depth": 10, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 13, "value": 0.9620253164556962, "state": "COMPLETE", "n_estimators": 100, "max_depth": 10, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 14, "value": 0.9685534591194969, "state": "COMPLETE", "n_estimators": 100, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 15, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 100, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 16, "value": 0.9615384615384616, "state": "COMPLETE", "n_estimators": 100, "max_depth": null, "min_samples_split": 10, "min_samples_leaf": 2}, {"trial_number": 17, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 18, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 19, "value": 0.9554140127388535, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 10, "min_samples_leaf": 1}, {"trial_number": 20, "value": 0.9554140127388535, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 2}, {"trial_number": 21, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 22, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 23, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 24, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 25, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 26, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 27, "value": 0.9746835443037974, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"trial_number": 28, "value": 0.9681528662420382, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 5, "min_samples_leaf": 1}, {"trial_number": 29, "value": 0.9615384615384616, "state": "COMPLETE", "n_estimators": 200, "max_depth": null, "min_samples_split": 10, "min_samples_leaf": 2}], "importance": {"max_depth": 0.6779052824844803, "min_samples_split": 0.1375376412563377, "n_estimators": 0.10621531874500552, "min_samples_leaf": 0.07834175751417642}, "correlation": {"n_estimators ↔ min_samples_split": -0.17435759632020575, "n_estimators ↔ min_samples_leaf": -0.19051253430939394, "min_samples_split ↔ min_samples_leaf": 0.05419060562388622}, "best_value": 0.9746835443037974, "param_names": ["min_samples_split", "min_samples_leaf", "max_depth", "n_estimators"]}};
+            
+            // 차트 생성 함수들
+            function createOptimizationChart(modelType) {
+                const data = allData[modelType];
+                if (!data || !data.trials) return;
+                
+                const trials = data.trials;
+                const x = trials.map(trial => trial.trial_number);
+                const y = trials.map(trial => trial.value);
+                
+                const trace = {
+                    x: x,
+                    y: y,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'Performance',
+                    line: { color: '#667eea', width: 2 },
+                    marker: { size: 6, color: '#667eea' }
+                };
+                
+                const layout = {
+                    title: `${modelType} 최적화 과정`,
+                    xaxis: { title: 'Trial Number' },
+                    yaxis: { title: 'Performance' },
+                    height: 400
+                };
+                
+                Plotly.newPlot('optimization_' + modelType, [trace], layout);
+            }
+            
+            function createImportanceChart(modelType) {
+                const data = allData[modelType];
+                if (!data || !data.importance || Object.keys(data.importance).length === 0) {
+                    document.getElementById('importance_' + modelType).innerHTML = '<div class="no-data">파라미터 중요도 데이터가 없습니다.</div>';
+                    return;
+                }
+                
+                const importance = data.importance;
+                const sortedParams = Object.entries(importance).sort((a, b) => b[1] - a[1]);
+                
+                const trace = {
+                    x: sortedParams.map(item => item[1]),
+                    y: sortedParams.map(item => item[0]),
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { color: '#667eea' }
+                };
+                
+                const layout = {
+                    title: `${modelType} 파라미터 중요도`,
+                    xaxis: { title: 'Importance' },
+                    yaxis: { title: 'Parameters' },
+                    height: 400
+                };
+                
+                Plotly.newPlot('importance_' + modelType, [trace], layout);
+            }
+            
+            function createCorrelationChart(modelType) {
+                const data = allData[modelType];
+                if (!data || !data.correlation || Object.keys(data.correlation).length === 0) {
+                    document.getElementById('correlation_' + modelType).innerHTML = '<div class="no-data">상관관계 데이터가 없습니다.</div>';
+                    return;
+                }
+                
+                const correlation = data.correlation;
+                const sortedCorr = Object.entries(correlation).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+                
+                const trace = {
+                    x: sortedCorr.map(item => item[1]),
+                    y: sortedCorr.map(item => item[0]),
+                    type: 'bar',
+                    orientation: 'h',
+                    marker: { 
+                        color: sortedCorr.map(item => {
+                            const corr = item[1];
+                            if (corr > 0.7) return '#d32f2f';      // 강한 양의 상관: 빨간색
+                            else if (corr > 0.3) return '#f57c00'; // 중간 양의 상관: 주황색
+                            else if (corr > 0) return '#388e3c';   // 약한 양의 상관: 녹색
+                            else if (corr > -0.3) return '#1976d2'; // 약한 음의 상관: 파란색
+                            else if (corr > -0.7) return '#7b1fa2'; // 중간 음의 상관: 보라색
+                            else return '#424242';                  // 강한 음의 상관: 회색
+                        })
+                    },
+                    text: sortedCorr.map(item => item[1].toFixed(3)),
+                    textposition: 'auto',
+                    hovertemplate: 
+                        '<b>%{y}</b><br>' +
+                        '상관관계: %{x:.4f}<br>' +
+                        '<extra></extra>'
+                };
+                
+                const layout = {
+                    title: `${modelType} 파라미터 상관관계 (강도별 정렬)`,
+                    xaxis: { 
+                        title: 'Correlation Coefficient', 
+                        range: [-1.1, 1.1],
+                        zeroline: true,
+                        zerolinecolor: '#000',
+                        zerolinewidth: 2,
+                        tickformat: '.3f'
+                    },
+                    yaxis: { 
+                        title: 'Parameter Pairs',
+                        automargin: true,
+                        tickfont: {size: 11}
+                    },
+                    height: 500,
+                    margin: {l: 250, r: 50, t: 80, b: 80},
+                    plot_bgcolor: '#fafafa',
+                    paper_bgcolor: 'white'
+                };
+                
+                Plotly.newPlot('correlation_' + modelType, [trace], layout);
+                console.log(`${modelType} 상관관계 차트 생성 완료:`, sortedCorr.length, '개 쌍');
+            }
+            
+            function createParallelCoordinate(modelType) {
+                const data = allData[modelType];
+                if (!data || !data.trials) return;
+                
+                const minSlider = document.getElementById(modelType.toLowerCase() + '-parallel-min');
+                const maxSlider = document.getElementById(modelType.toLowerCase() + '-parallel-max');
+                const minValue = parseFloat(minSlider.value);
+                const maxValue = parseFloat(maxSlider.value);
+                
+                document.getElementById(modelType.toLowerCase() + '-parallel-min-value').textContent = minValue.toFixed(2);
+                document.getElementById(modelType.toLowerCase() + '-parallel-max-value').textContent = maxValue.toFixed(2);
+                
+                const filteredTrials = data.trials.filter(trial => 
+                    trial.value >= minValue && trial.value <= maxValue
+                );
+                
+                if (filteredTrials.length === 0) {
+                    document.getElementById('parallel_' + modelType).innerHTML = '<div class="no-data">필터 조건에 맞는 데이터가 없습니다.</div>';
+                    return;
+                }
+                
+                const paramNames = data.param_names || [];
+                const dimensions = paramNames.map(param => ({
+                    label: param,
+                    values: filteredTrials.map(trial => trial[param] || 0)
+                }));
+                
+                dimensions.push({
+                    label: 'Performance',
+                    values: filteredTrials.map(trial => trial.value)
+                });
+                
+                const trace = {
+                    type: 'parcoords',
+                    dimensions: dimensions,
+                    line: {
+                        color: filteredTrials.map(trial => trial.value),
+                        colorscale: 'Viridis',
+                        showscale: true
+                    }
+                };
+                
+                const layout = {
+                    title: `${modelType} Parallel Coordinate Plot`,
+                    height: 400
+                };
+                
+                Plotly.newPlot('parallel_' + modelType, [trace], layout);
+            }
+            
+            function createContourPlot(modelType) {
+                const data = allData[modelType];
+                if (!data || !data.trials) return;
+                
+                const xParamSelect = document.getElementById(modelType.toLowerCase() + '-contour-x');
+                const yParamSelect = document.getElementById(modelType.toLowerCase() + '-contour-y');
+                const xParam = xParamSelect.value;
+                const yParam = yParamSelect.value;
+                
+                if (!xParam || !yParam || xParam === yParam) {
+                    document.getElementById('contour_' + modelType).innerHTML = '<div class="no-data">서로 다른 두 파라미터를 선택하세요.</div>';
+                    return;
+                }
+                
+                const validTrials = data.trials.filter(trial => 
+                    trial[xParam] !== undefined && trial[yParam] !== undefined
+                );
+                
+                if (validTrials.length < 3) {
+                    document.getElementById('contour_' + modelType).innerHTML = '<div class="no-data">데이터가 부족합니다.</div>';
+                    return;
+                }
+                
+                const trace = {
+                    x: validTrials.map(trial => trial[xParam]),
+                    y: validTrials.map(trial => trial[yParam]),
+                    z: validTrials.map(trial => trial.value),
+                    type: 'scatter',
+                    mode: 'markers',
+                    marker: {
+                        size: 10,
+                        color: validTrials.map(trial => trial.value),
+                        colorscale: 'Viridis',
+                        showscale: true
+                    }
+                };
+                
+                const layout = {
+                    title: `${modelType} Contour Plot (${xParam} vs ${yParam})`,
+                    xaxis: { title: xParam },
+                    yaxis: { title: yParam },
+                    height: 400
+                };
+                
+                Plotly.newPlot('contour_' + modelType, [trace], layout);
+            }
+            
+            function createSlicePlot(modelType) {
+                const data = allData[modelType];
+                if (!data || !data.trials) return;
+                
+                const paramSelect = document.getElementById(modelType.toLowerCase() + '-slice-param');
+                const rangeSlider = document.getElementById(modelType.toLowerCase() + '-slice-range');
+                const param = paramSelect.value;
+                const threshold = parseFloat(rangeSlider.value);
+                
+                document.getElementById(modelType.toLowerCase() + '-slice-range-value').textContent = threshold.toFixed(2);
+                
+                if (!param) {
+                    document.getElementById('slice_' + modelType).innerHTML = '<div class="no-data">파라미터를 선택하세요.</div>';
+                    return;
+                }
+                
+                const filteredTrials = data.trials.filter(trial => 
+                    trial[param] !== undefined && trial.value >= threshold
+                );
+                
+                if (filteredTrials.length === 0) {
+                    document.getElementById('slice_' + modelType).innerHTML = '<div class="no-data">조건에 맞는 데이터가 없습니다.</div>';
+                    return;
+                }
+                
+                const trace = {
+                    x: filteredTrials.map(trial => trial[param]),
+                    y: filteredTrials.map(trial => trial.value),
+                    type: 'scatter',
+                    mode: 'markers',
+                    marker: {
+                        size: 10,
+                        color: filteredTrials.map(trial => trial.value),
+                        colorscale: 'Viridis',
+                        showscale: true
+                    }
+                };
+                
+                const layout = {
+                    title: `${modelType} Slice Plot (${param})`,
+                    xaxis: { title: param },
+                    yaxis: { title: 'Performance' },
+                    height: 400
+                };
+                
+                Plotly.newPlot('slice_' + modelType, [trace], layout);
+            }
+            
+            // 리셋 함수들
+            function resetParallelCoordinate(modelType) {
+                document.getElementById(modelType.toLowerCase() + '-parallel-min').value = 0.5;
+                document.getElementById(modelType.toLowerCase() + '-parallel-max').value = 1.0;
+                document.getElementById(modelType.toLowerCase() + '-parallel-min-value').textContent = '0.50';
+                document.getElementById(modelType.toLowerCase() + '-parallel-max-value').textContent = '1.00';
+                createParallelCoordinate(modelType);
+            }
+            
+            function resetContourPlot(modelType) {
+                createContourPlot(modelType);
+            }
+            
+            function resetSlicePlot(modelType) {
+                document.getElementById(modelType.toLowerCase() + '-slice-range').value = 0.5;
+                document.getElementById(modelType.toLowerCase() + '-slice-range-value').textContent = '0.50';
+                createSlicePlot(modelType);
+            }
+            
+            // 페이지 로드 완료 후 모든 차트 초기화
+            window.addEventListener('load', function() {
+                console.log('통합 DB 대시보드 (상관관계 개선) 로드 완료');
+                
+                // 각 모델에 대해 모든 차트 생성
+                Object.keys(allData).forEach(modelType => {
+                    createOptimizationChart(modelType);
+                    createImportanceChart(modelType);
+                    createCorrelationChart(modelType);
+                    createParallelCoordinate(modelType);
+                    createContourPlot(modelType);
+                    createSlicePlot(modelType);
+                });
+            });
+        </script>
+    </body>
+    </html>
+    

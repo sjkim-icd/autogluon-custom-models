@@ -1,6 +1,6 @@
-# AutoGluon Custom Deep Learning Models
+# AutoGluon Custom Deep Learning Models with Optuna HPO
 
-> AutoGluon 프레임워크에 커스텀 딥러닝 모델(DeepFM, DCNv2, CustomNN)을 통합하고, Focal Loss를 활용한 불균형 데이터 처리 모델을 구현한 프로젝트입니다.
+> AutoGluon 프레임워크에 커스텀 딥러닝 모델을 통합하고, Optuna를 활용한  하이퍼파라미터 최적화(HPO)와 실험 관리 시스템을 구현한 프로젝트입니다.
 
 ## 📋 목차
 
@@ -9,8 +9,9 @@
 - [🛠️ 설치 및 설정](#️-설치-및-설정)
 - [🚀 사용 방법](#-사용-방법)
 - [📊 모델 설명](#-모델-설명)
-- [🔧 하이퍼파라미터 튜닝](#-하이퍼파라미터-튜닝)
-- [📈 성능 결과](#-성능-결과)
+- [🔧 Optuna HPO 시스템](#-optuna-hpo-시스템)
+- [📈 실험 관리](#-실험-관리)
+- [📊 분석 대시보드](#-분석-대시보드)
 - [🔍 주요 특징](#-주요-특징)
 - [🤝 기여하기](#-기여하기)
 - [📝 라이선스](#-라이선스)
@@ -18,16 +19,26 @@
 ## 🚀 주요 기능
 
 ### 🧠 커스텀 딥러닝 모델
-- **DeepFM**: Factorization Machine과 Deep Neural Network 결합
-- **DCNv2**: Cross Network에 Low-rank Factorization 적용
+- **DCNV2**: Deep & Cross Network v2 구현
+- **DCNV2_FUXICTR**: DCNv2 with Mixture-of-Experts
 - **CustomNNTorchModel**: 일반적인 신경망 모델 (CrossEntropy Loss)
 - **CustomFocalDLModel**: 클래스 불균형 문제 해결을 위한 Focal Loss 구현
+- **RandomForest**: 트리 기반 앙상블 모델
 
-### 🔧 AutoGluon 통합
-- 커스텀 모델들을 AutoGluon의 하이퍼파라미터 튜닝 시스템과 완전히 통합
-- 동적 차원 처리로 다양한 데이터셋에 자동 적용
-- 앙상블 학습으로 최적 성능 보장
-- 학습률 스케줄러 지원 (Cosine, OneCycle, Plateau 등)
+### 🔧 AutoGluon + Optuna 통합
+- 커스텀 모델들을 AutoGluon의 하이퍼파라미터 튜닝 시스템과 통합
+- **Optuna를 활용한 고급 HPO**: Bayesian Optimization, Random Search
+- **통합 DB 시스템**: 모든 실험을 단일 SQLite DB에 저장
+- **실험별 폴더 구조**: 각 실험의 결과를 독립적으로 관리
+- **실시간 모니터링**: Optuna Dashboard로 실시간 진행 상황 확인
+
+### OPTUNA 결과 분석
+
+- **HTML 대시보드**: 인터랙티브 차트와 필터링 기능
+- **Excel 보고서**: 상세한 분석 결과와 조건부 서식
+- **파라미터 중요도 분석**: Optuna의 자동 중요도 계산
+- **최적화 과정 분석**: 수렴성, 안정성 평가
+- **상관관계 분석**: 하이퍼파라미터 간 상관관계 시각화
 
 ## 📁 프로젝트 구조
 
@@ -38,35 +49,33 @@ autogluon_env_cursor/
 ├── 📄 LICENSE                            # MIT 라이선스
 ├── 📄 .gitignore                         # Git 제외 파일 목록
 ├── 📁 datasets/                          # 데이터셋 폴더
-│   └── 📄 creditcard.csv                 # 신용카드 사기 탐지 데이터셋
+│   ├── 📄 creditcard.csv                 # 신용카드 사기 탐지 데이터셋
+│   └── 📄 titanic.csv                    # 타이타닉 생존 예측 데이터셋
 ├── 📁 custom_models/                     # 커스텀 모델 구현
 │   ├── 📄 __init__.py
-│   ├── 📄 tabular_deepfm_torch_model.py   # DeepFM AutoGluon 진입점
 │   ├── 📄 tabular_dcnv2_torch_model.py    # DCNv2 AutoGluon 진입점
+│   ├── 📄 tabular_dcnv2_fuxictr_torch_model_fixed.py  # DCNv2 FuxiCTR
 │   ├── 📄 custom_nn_torch_model.py        # CustomNN AutoGluon 진입점
-│   ├── 📄 deepfm_block.py                 # DeepFM 네트워크 구현
-│   ├── 📄 dcnv2_block.py                  # DCNv2 네트워크 구현
 │   ├── 📄 focal_loss_implementation.py    # Focal Loss 구현 및 CustomFocalDLModel
-│   └── 📄 focal_loss.py                   # Focal Loss 클래스 구현
+│   ├── 📄 dcnv2_block.py                  # DCNv2 네트워크 구현
+│   └── 📄 dcnv2_block_fuxictr.py         # DCNv2 FuxiCTR 네트워크 구현
 ├── 📁 experiments/                        # 실험 스크립트
-│   ├── 📄 five_models_combined.py         # 5개 모델 하이퍼파라미터 튜닝
-│   ├── 📄 five_hyper.py                   # 5개 모델 하이퍼파라미터 검색
-│   ├── 📄 hyperparameter_search.py        # 하이퍼파라미터 검색 유틸리티
-│   ├── 📄 hyperparameter_search_autogluon.py  # AutoGluon 하이퍼파라미터 검색
-│   └── 📄 test_deepfm_simple.py           # DeepFM 간단 테스트
-├── 📁 tutorials/                          # 사용 예제 및 튜토리얼
-│   ├── 📄 deepfm_tutorial.py              # DeepFM 단독 학습 예제
-│   ├── 📄 dcnv2_tutorial.py               # DCNv2 단독 학습 예제
-│   ├── 📄 learning_rate_scheduler_tutorial.py  # 학습률 스케줄러 튜토리얼
-│   └── 📄 simple_lr_scheduler_tutorial.py     # 간단한 LR 스케줄러 튜토리얼
-└── 📁 models/                             # 학습된 모델 저장 폴더 (Git 제외)
-    ├── 📁 five_models_experiment/         # 5개 모델 실험 결과
-    ├── 📁 deepfm_tutorial/                # DeepFM 튜토리얼 결과
-    ├── 📁 dcnv2_tutorial/                 # DCNv2 튜토리얼 결과
-    ├── 📁 deepfm_no_scheduler/            # DeepFM (스케줄러 없음)
-    ├── 📁 deepfm_onecycle_scheduler/      # DeepFM (OneCycle 스케줄러)
-    ├── 📁 deepfm_cosine_scheduler/        # DeepFM (Cosine 스케줄러)
-    └── 📁 deepfm_plateau_scheduler/       # DeepFM (Plateau 스케줄러)
+│   ├── 📄 optuna_single_stage_hpo_unified_db.py  # Titanic 데이터 HPO
+│   ├── 📄 optuna_single_stage_hpo_credit_card.py # Credit Card 데이터 HPO
+│   ├── 📄 run_experiment.bat              # Windows 배치 스크립트
+│   └── 📄 run_experiment.ps1              # PowerShell 스크립트
+├── 📁 analysis/                           # 분석 스크립트
+│   └── 📄 create_final_unified_dashboard_excel_fixed.py  # 대시보드 생성
+├── 📁 optuna_studies/                     # Optuna 실험 DB
+│   ├── 📁 titanic_5models_hpo_v1/        # Titanic 실험 DB
+│   ├── 📁 credit_card_5models_hpo_v1/    # Credit Card 실험 DB
+│   └── 📁 {experiment_name}/              # 실험별 DB 폴더
+├── 📁 results/                            # 실험 결과 폴더
+│   ├── 📁 titanic_5models_hpo_v1/        # Titanic 실험 결과
+│   ├── 📁 credit_card_5models_hpo_v1/    # Credit Card 실험 결과
+│   └── 📁 {experiment_name}/              # 실험별 결과 폴더
+├── 📁 models/                             # 학습된 모델 저장 폴더
+└── 📁 backup/                             # 백업 파일들
 ```
 
 ## 🛠️ 설치 및 설정
@@ -84,201 +93,248 @@ autogluon_env\Scripts\activate     # Windows
 pip install -r requirements.txt
 ```
 
-### 2️⃣ 데이터 준비
+### 2️⃣ 추가 패키지 설치
 
-`datasets/` 폴더에 `creditcard.csv` 파일을 위치시킵니다.
+```bash
+# Optuna 관련 패키지
+pip install optuna kaleido
+
+# Excel 파일 생성용
+pip install openpyxl
+
+# 대시보드 시각화용
+pip install plotly
+```
+
+### 3️⃣ 데이터 준비
+
+`datasets/` 폴더에 다음 파일들을 위치시킵니다:
+- `creditcard.csv`: 신용카드 사기 탐지 데이터셋
+- `titanic.csv`: 타이타닉 생존 예측 데이터셋
 
 ## 🚀 사용 방법
 
-### 🎯 기본 사용법 (5개 모델 하이퍼파라미터 튜닝)
+### 🎯 1단계: HPO 실험 실행
 
+#### Titanic 데이터 실험
 ```bash
-cd experiments
-python five_models_combined.py
+# 직접 실행
+python experiments/optuna_single_stage_hpo_unified_db.py "titanic_5models_hpo_v1"
+
+# 또는 배치 스크립트 사용
+run_experiment.bat "titanic_5models_hpo_v1"
 ```
 
-### 🔍 하이퍼파라미터 검색
-
+#### Credit Card 데이터 실험
 ```bash
-# 5개 모델 하이퍼파라미터 검색
-python experiments/five_hyper.py
+# 직접 실행
+python experiments/optuna_single_stage_hpo_credit_card.py "credit_card_5models_hpo_v1"
 
-# AutoGluon 하이퍼파라미터 검색
-python experiments/hyperparameter_search_autogluon.py
+# 또는 배치 스크립트 사용
+run_experiment.bat "credit_card_5models_hpo_v1"
 ```
 
-### 📚 개별 모델 학습
+### 🔄 2단계: 연속 실행 (HPO + 분석)
 
 ```bash
-# DeepFM 단독 학습
-python tutorials/deepfm_tutorial.py
+# 방법 1: 직접 연결
+python experiments/optuna_single_stage_hpo_unified_db.py "titanic_5models_hpo_v1" ; python analysis/create_final_unified_dashboard_excel_fixed.py "titanic_5models_hpo_v1"
 
-# DCNv2 단독 학습
-python tutorials/dcnv2_tutorial.py
+# 방법 2: 배치 스크립트
+run_experiment.bat "titanic_5models_hpo_v1"
+
+# 방법 3: PowerShell 스크립트
+.\run_experiment.ps1 "titanic_5models_hpo_v1"
 ```
 
-### 🔧 학습률 스케줄러 튜토리얼
+### 📊 3단계: 분석 대시보드 생성
 
 ```bash
-# 학습률 스케줄러 튜토리얼
-python tutorials/learning_rate_scheduler_tutorial.py
-
-# 간단한 LR 스케줄러 튜토리얼
-python tutorials/simple_lr_scheduler_tutorial.py
+python analysis/create_final_unified_dashboard_excel_fixed.py "experiment_name"
 ```
 
 ## 📊 모델 설명
 
-### 🧠 DeepFM (Factorization-Machine based Neural Network)
+### 🧠 커스텀 모델들
 
-| 항목 | 설명 |
-|------|------|
-| **특징** | Factorization Machine과 Deep Neural Network 결합 |
-| **장점** | 저차원과 고차원 특성 상호작용을 모두 학습 |
-| **적용** | 추천 시스템, CTR 예측 등 |
+#### DCNV2 (Deep & Cross Network v2)/DCNV2_FUXICTR
+- **특징**: Cross Network와 Deep Network의 결합
+- **장점**: 고차원 특성 상호작용 학습, 효율적인 계산
+- **적용**: 범주형 + 수치형 데이터 혼합
 
-### 🔗 DCNv2 (Deep & Cross Network v2)
 
-| 항목 | 설명 |
-|------|------|
-| **특징** | Cross Network에 Low-rank Factorization 적용 |
-| **장점** | 효율적인 특성 상호작용 학습, 파라미터 수 감소 |
-| **적용** | 추천 시스템, CTR 예측, 대규모 스파스 데이터 처리 |
+#### CustomFocalDLModel
+- **특징**: Focal Loss를 사용한 불균형 데이터 처리
+- **장점**: 클래스 불균형 문제 해결, 소수 클래스 성능 향상
+- **적용**: 사기 탐지, 의료 진단 등 불균형 데이터
 
-### 🧠 CustomNNTorchModel
+#### CustomNNTorchModel
+- **특징**: 일반적인 신경망 (CrossEntropy Loss)
+- **장점**: 안정적인 학습, 다양한 데이터에 적용 가능
+- **적용**: 일반적인 분류 문제
 
-| 항목 | 설명 |
-|------|------|
-| **특징** | 일반적인 신경망 모델 (CrossEntropy Loss) |
-| **장점** | 간단하고 안정적인 성능, 학습률 스케줄러 지원 |
-| **적용** | 일반적인 분류 문제 |
+#### RandomForest
+- **특징**: 트리 기반 앙상블 모델
+- **장점**: 해석 가능성, 과적합 방지
+- **적용**: 모든 분류 문제
 
-### ⚖️ CustomFocalDLModel
+## 🔧 Optuna HPO 시스템
 
-| 항목 | 설명 |
-|------|------|
-| **특징** | Focal Loss를 사용한 클래스 불균형 처리 |
-| **장점** | 소수 클래스에 대한 학습 성능 향상 |
-| **적용** | 불균형 데이터셋 (사기 탐지, 의료 진단 등) |
+### 🎯 HPO 구성
+- **각 모델당 15 trials**: 총 75 trials (5개 모델)
+- **HPO 방법**: Bayesian Optimization
+- **메트릭**: F1 Score (불균형 데이터에 적합)
+- **시간 제한**: 모델당 10분, 전체 20분
 
-## 🔧 하이퍼파라미터 튜닝
+### 📊 하이퍼파라미터 검색 공간
 
-### 🧠 DeepFM 하이퍼파라미터
+#### 딥러닝 모델들 (DCNV2, DCNV2_FUXICTR, CUSTOM_FOCAL_DL, CUSTOM_NN_TORCH)
+```python
+{
+    'learning_rate': [1e-4, 1e-2],  # 로그 스케일
+    'weight_decay': [1e-6, 1e-3],   # 로그 스케일
+    'dropout_prob': [0.1, 0.2, 0.3],
+    'num_layers': [3, 4, 5],
+    'hidden_size': [128, 256, 512],
+    'num_epochs': [15, 20, 25]
+}
+```
 
-| 파라미터 | 범위 | 설명 |
-|----------|------|------|
-| `fm_dropout` | 0.1 ~ 0.3 | FM 레이어 드롭아웃 |
-| `fm_embedding_dim` | 8 ~ 16 | 임베딩 차원 |
-| `deep_output_size` | 32 ~ 128 | 딥 네트워크 출력 크기 |
-| `deep_hidden_size` | 32 ~ 128 | 딥 네트워크 은닉층 크기 |
-| `deep_dropout` | 0.1 ~ 0.3 | 딥 네트워크 드롭아웃 |
-| `deep_layers` | 1 ~ 3 | 딥 네트워크 레이어 수 |
+#### Focal Loss 모델 추가 파라미터
+```python
+{
+    'focal_alpha': [0.25, 0.5, 0.75],
+    'focal_gamma': [1.0, 2.0, 3.0]
+}
+```
 
-### 🔗 DCNv2 하이퍼파라미터
+#### RandomForest
+```python
+{
+    'n_estimators': [100, 200],
+    'max_depth': [None, 10, 20],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2]
+}
+```
 
-| 파라미터 | 범위 | 설명 |
-|----------|------|------|
-| `num_cross_layers` | 1 ~ 3 | 크로스 네트워크 레이어 수 |
-| `cross_dropout` | 0.1 ~ 0.3 | 크로스 네트워크 드롭아웃 |
-| `low_rank` | 8 ~ 32 | 저차원 분해 크기 |
-| `deep_output_size` | 32 ~ 128 | 딥 네트워크 출력 크기 |
-| `deep_hidden_size` | 32 ~ 128 | 딥 네트워크 은닉층 크기 |
-| `deep_dropout` | 0.1 ~ 0.3 | 딥 네트워크 드롭아웃 |
-| `deep_layers` | 1 ~ 3 | 딥 네트워크 레이어 수 |
+### 🔄 통합 DB 시스템
+- **단일 SQLite DB**: `optuna_studies/{experiment_name}/all_studies.db`
+- **실험별 분리**: 각 실험의 DB가 독립적으로 관리
+- **지속성**: 실험 중단 후 재시작 가능
+- **확장성**: 새로운 실험 추가 용이
 
-### 🧠 CustomNNTorchModel 하이퍼파라미터
+## 📈 실험 관리
 
-| 파라미터 | 범위 | 설명 |
-|----------|------|------|
-| `learning_rate` | 0.0001 ~ 0.01 | 학습률 |
-| `weight_decay` | 0.00001 ~ 0.001 | 가중치 감쇠 |
-| `dropout_prob` | 0.1 ~ 0.3 | 드롭아웃 확률 |
-| `layers` | [100,50], [200,100], [300,150] | 네트워크 구조 |
-| `activation` | relu, tanh, leaky_relu | 활성화 함수 |
-| `optimizer` | adam, sgd, adamw | 최적화 알고리즘 |
+### 📁 실험별 폴더 구조
+```
+optuna_studies/
+├── titanic_5models_hpo_v1/
+│   └── all_studies.db
+├── credit_card_5models_hpo_v1/
+│   └── all_studies.db
+└── {experiment_name}/
+    └── all_studies.db
 
-### ⚖️ CustomFocalDLModel 하이퍼파라미터
+results/
+├── titanic_5models_hpo_v1/
+│   ├── optuna_advanced_report_*.xlsx
+│   └── optuna_unified_dashboard_*.html
+├── credit_card_5models_hpo_v1/
+│   ├── optuna_advanced_report_*.xlsx
+│   └── optuna_unified_dashboard_*.html
+└── {experiment_name}/
+    ├── optuna_advanced_report_*.xlsx
+    └── optuna_unified_dashboard_*.html
+```
 
-| 파라미터 | 범위 | 설명 |
-|----------|------|------|
-| `learning_rate` | 0.0001 ~ 0.01 | 학습률 |
-| `weight_decay` | 0.00001 ~ 0.001 | 가중치 감쇠 |
-| `dropout_prob` | 0.1 ~ 0.3 | 드롭아웃 확률 |
-| `layers` | [100,50], [200,100], [300,150] | 네트워크 구조 |
-| `activation` | relu, tanh, leaky_relu | 활성화 함수 |
-| `optimizer` | adam, sgd, adamw | 최적화 알고리즘 |
+### 🔍 실험 모니터링
+```bash
+# Optuna Dashboard 실행
+optuna-dashboard sqlite:///optuna_studies/{experiment_name}/all_studies.db
+
+# 웹 브라우저에서 접속
+http://localhost:8080
+```
 
 ## 📈 성능 결과
 
-### 🎯 신용카드 사기 탐지 데이터셋 결과
+### 🏆 Titanic 데이터셋 실험 결과 (`titanic_5models_hpo_v1`)
 
-| 모델 | 검증 F1 | 테스트 F1 | 학습시간 | 특징 |
-|------|---------|-----------|----------|------|
-| **DCNV2_FUXICTR** | 0.8571 | 0.8148 | 188.52초 | 최고 성능 (Best Performance) |
-| **DCNV2** | 0.8571 | 0.7143 | 119.29초 | 빠른 학습 (Fast Learning) |
-| **CUSTOM_FOCAL_DL** | 0.7500 | 0.7979 | 243.59초 | Focal Loss |
-| **WeightedEnsemble_L2** | 0.8571 | 0.7143 | 0.17초 | 앙상블 (Ensemble) |
+| 모델 | 최고 성능 | 평균 성능 | 표준편차 | 특징 |
+|------|-----------|-----------|----------|------|
+| **DCNV2_FUXICTR** | 0.9811 | 0.9679 | 0.0086 | 🥇 **최고 성능, 안정적** |
+| **CUSTOM_NN_TORCH** | 0.9811 | 0.9782 | 0.0039 | 🥈 **가장 안정적, 일관적** |
+| **CUSTOM_FOCAL_DL** | 0.9811 | 0.9183 | 0.1438 | 🥉 **최고 성능, 변동성 있음** |
+| **RF** | 0.9682 | 0.9620 | 0.0063 | **안정적, 해석 가능** |
+| **DCNV2** | 0.9744 | 0.8728 | 0.1663 | **최고 성능, 높은 변동성** |
 
-### 🏆 주요 성과
+### 📊 주요 발견사항
 
-- **최고 성능**: DCNV2_FUXICTR (검증 F1: 0.8571)
-- **가장 빠른 학습**: WeightedEnsemble_L2 (0.17초)
-- **안정적 성능**: DCNV2 (검증 F1: 0.8571)
-- **불균형 처리**: CUSTOM_FOCAL_DL (Focal Loss 적용)
+#### 🏅 **최고 성능 모델들**
+- **DCNV2_FUXICTR, CUSTOM_NN_TORCH, CUSTOM_FOCAL_DL**: 모두 0.9811의 최고 성능
+- **CUSTOM_NN_TORCH**: 가장 안정적 (표준편차 0.0039)
+- **DCNV2_FUXICTR**: 높은 성능 + 안정성 (표준편차 0.0086)
 
-### 📊 데이터셋 정보
+#### ⚠️ **변동성이 큰 모델들**
+- **DCNV2**: 높은 최고 성능이지만 변동성 큼 (표준편차 0.1663)
+- **CUSTOM_FOCAL_DL**: 최고 성능이지만 불안정 (표준편차 0.1438)
 
-| 항목 | 값 |
-|------|-----|
-| **전체 데이터 크기** | 284,807개 샘플 |
-| **정상 거래** | 284,315개 (99.83%) |
-| **사기 거래** | 492개 (0.17%) |
-| **평가 지표** | F1 Score |
-| **데이터 불균형 비율** | 1:577 (매우 심한 불균형) |
+#### 🎯 **권장 모델**
+- **CUSTOM_NN_TORCH**: 일관성과 성능의 최적 균형
+- **DCNV2_FUXICTR**: 높은 성능과 안정성
+- **RF**: 해석 가능성과 안정성
 
-## 🔍 주요 특징
+### 🔍 실험 설정
+- **데이터셋**: Titanic 생존 예측 (이진 분류)
+- **데이터 분할**: 80% 학습, 20% 테스트 (Stratified)
+- **평가 메트릭**: F1 Score
+- **HPO 설정**: 각 모델당 15 trials, 총 75 trials
+- **실험 시간**: 약 1시간 이내
 
-### ✅ AutoGluon 완전 통합
-- 커스텀 모델들이 AutoGluon의 모든 기능과 호환
-- 하이퍼파라미터 튜닝, 앙상블 학습 자동화
+## 📊 분석 대시보드
 
-### ✅ 동적 차원 처리
-- 입력/출력 차원이 데이터셋에 따라 자동 조정
-- 다양한 데이터셋에 즉시 적용 가능
+### 🌐 HTML 대시보드 기능
+- **최적화 과정 차트**: 실시간 성능 변화 추이
+- **파라미터 중요도**: 각 하이퍼파라미터의 영향도
+- **상관관계 분석**: 하이퍼파라미터 간 상관관계
+- **Parallel Coordinate Plot**: 다차원 파라미터 공간 시각화
+- **Contour Plot**: 2차원 파라미터 공간 최적화 영역
+- **Slice Plot**: 개별 파라미터 영향 분석
+- **필터링 기능**: 각 차트별 독립적인 필터
+- **사용자 지정 권장사항**: 다음 실험을 위한 제안사항
 
-### ✅ 클래스 불균형 처리
-- Focal Loss를 통한 효과적인 불균형 데이터 학습
-- 소수 클래스 성능 향상
-
-### ✅ 모듈화된 구조
-- 각 모델이 독립적으로 사용 가능
-- 새로운 커스텀 모델 추가 용이
-
-### ✅ 학습률 스케줄러 지원
-- 다양한 학습률 스케줄러 구현
-- OneCycle, Cosine, Plateau 등 지원
-
-### ✅ 하이퍼파라미터 검색 도구
-- 체계적인 하이퍼파라미터 검색 기능
-- AutoGluon 통합 검색 도구 제공
-
-## 🤝 기여하기
-
-1. **Fork** the repository
-2. **Create** your feature branch (`git checkout -b feature/AmazingFeature`)
-3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** to the branch (`git push origin feature/AmazingFeature`)
-5. **Open** a Pull Request
-
-## 📝 라이선스
-
-이 프로젝트는 Apache License 2.0 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-**라이선스 관련 참고사항:**
-- AutoGluon 프레임워크는 Apache License 2.0을 사용합니다
-
+### 📊 Excel 보고서 기능
+- **요약 시트**: 실험 개요 및 주요 결과
+- **개별 모델 시트**: 각 모델의 상세 분석
+- **파라미터 중요도**: 정렬된 중요도 차트
+- **최적화 과정**: 수렴성 및 안정성 분석
+- **권장사항**: 다음 실험을 위한 구체적 제안
+- **조건부 서식**: 성능별 색상 구분
 
 ---
+
+## 🚀 빠른 시작
+
+```bash
+# 1. 환경 설정
+python -m venv autogluon_env
+autogluon_env\Scripts\activate  # Windows
+
+# 2. 의존성 설치
+pip install -r requirements.txt
+pip install optuna kaleido openpyxl plotly
+
+# 3. Titanic 실험 실행
+python experiments/optuna_single_stage_hpo_unified_db.py "titanic_5models_hpo_v1"
+
+# 4. 분석 대시보드 생성
+python analysis/create_final_unified_dashboard_excel_fixed.py "titanic_5models_hpo_v1"
+
+# 5. 결과 확인
+# - HTML: results/titanic_5models_hpo_v1/optuna_unified_dashboard_*.html
+# - Excel: results/titanic_5models_hpo_v1/optuna_advanced_report_*.xlsx
+```
 
 
 

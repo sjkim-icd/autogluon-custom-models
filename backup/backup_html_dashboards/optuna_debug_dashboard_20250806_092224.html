@@ -1,0 +1,447 @@
+
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🎯 Optuna HPO 분석 대시보드 (수정됨)</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+                background-color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 2.5em;
+                font-weight: 300;
+            }
+            .header p {
+                margin: 10px 0 0 0;
+                opacity: 0.9;
+                font-size: 1.1em;
+            }
+            .content {
+                padding: 30px;
+            }
+            .section {
+                margin-bottom: 40px;
+                background-color: #fafafa;
+                border-radius: 8px;
+                padding: 25px;
+                border-left: 4px solid #667eea;
+            }
+            .section h2 {
+                color: #333;
+                margin-top: 0;
+                font-size: 1.8em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .model-section {
+                background-color: white;
+                border-radius: 8px;
+                padding: 25px;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .model-section h3 {
+                color: #667eea;
+                margin-top: 0;
+                font-size: 1.5em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .chart-container {
+                margin: 20px 0;
+                text-align: center;
+                border: 1px solid #eee;
+                border-radius: 8px;
+                padding: 20px;
+                background-color: #fafafa;
+                min-height: 400px;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+            .stat-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+            }
+            .stat-card h4 {
+                margin: 0 0 10px 0;
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .stat-card .value {
+                font-size: 2em;
+                font-weight: bold;
+                margin: 0;
+            }
+            .no-data {
+                text-align: center;
+                padding: 40px;
+                color: #666;
+                font-style: italic;
+            }
+            .debug-info {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 10px;
+                margin: 10px 0;
+                font-size: 0.9em;
+                color: #856404;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎯 Optuna HPO 분석 대시보드 (수정됨)</h1>
+                <p>Hyperparameter Optimization 결과 및 시각화</p>
+                <p>생성 시간: 2025-08-06 09:22:24</p>
+            </div>
+            
+            <div class="content">
+    
+                <div class="model-section">
+                    <h3>🎯 DCNV2 상세 분석</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9747</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9121</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0789</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.7194 ~ 0.9747</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: 15개, 성능 범위: 0.7194 ~ 0.9747
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_DCNV2"></div>
+                    </div>
+                    <script>
+                        var data = [
+                            {
+                                x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                y: [0.8175182481751825, 0.7761194029850746, 0.9615384615384616, 0.9281045751633987, 0.9681528662420382, 0.8571428571428571, 0.9411764705882353, 0.9548387096774194, 0.9044585987261147, 0.7194244604316546, 0.9746835443037974, 0.9746835443037974, 0.9681528662420382, 0.967741935483871, 0.9681528662420382],
+                                type: 'scatter',
+                                mode: 'markers',
+                                name: 'Trial 값',
+                                marker: {color: '#667eea', size: 8}
+                            }
+                        ];
+                        
+                        var layout = {
+                            title: 'DCNV2 최적화 과정',
+                            xaxis: {title: 'Trial 번호'},
+                            yaxis: {title: '성능 값'},
+                            height: 400
+                        };
+                        
+                        Plotly.newPlot('history_DCNV2', data, layout);
+                    </script>
+            
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_DCNV2"></div>
+                        </div>
+                        <script>
+                            var data = [
+                                {
+                                    x: [np.float64(0.7713031936529459), np.float64(0.10006687851131205), np.float64(0.08452017429396964), np.float64(0.017412818411639247), np.float64(0.01698946431875224), np.float64(0.009707470811380882)],
+                                    y: ['num_layers', 'num_epochs', 'learning_rate', 'weight_decay', 'dropout_prob', 'hidden_size'],
+                                    type: 'bar',
+                                    orientation: 'h',
+                                    marker: {color: '#667eea'}
+                                }
+                            ];
+                            
+                            var layout = {
+                                title: 'DCNV2 파라미터 중요도',
+                                xaxis: {title: '중요도'},
+                                yaxis: {title: '파라미터'},
+                                height: 400
+                            };
+                            
+                            Plotly.newPlot('importance_DCNV2', data, layout);
+                        </script>
+                    
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_DCNV2"></div>
+                            </div>
+                            <script>
+                                var data = [
+                                    {
+                                        x: ['learning_rate vs dropout_prob', 'learning_rate vs weight_decay', 'learning_rate vs num_layers', 'num_layers vs num_epochs', 'dropout_prob vs num_epochs'],
+                                        y: [np.float64(0.6468416187520898), np.float64(0.5901461874157068), np.float64(-0.5434030967048904), np.float64(0.40824829046386296), np.float64(-0.31868871959954914)],
+                                        type: 'bar',
+                                        marker: {color: '#667eea'}
+                                    }
+                                ];
+                                
+                                var layout = {
+                                    title: 'DCNV2 파라미터 상관관계 (상위 5개)',
+                                    xaxis: {title: '파라미터 쌍'},
+                                    yaxis: {title: '상관계수'},
+                                    height: 400
+                                };
+                                
+                                Plotly.newPlot('correlation_DCNV2', data, layout);
+                            </script>
+                        
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 CUSTOM_FOCAL_DL 상세 분석</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.8915</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.1699</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.5517 ~ 0.9811</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: 15개, 성능 범위: 0.5517 ~ 0.9811
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_CUSTOM_FOCAL_DL"></div>
+                    </div>
+                    <script>
+                        var data = [
+                            {
+                                x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                y: [0.9743589743589743, 0.5517241379310345, 0.5517241379310345, 0.9746835443037974, 0.9746835443037974, 0.975, 0.9811320754716981, 0.975, 0.975, 0.5517241379310345, 0.9746835443037974, 0.9811320754716981, 0.9811320754716981, 0.975, 0.975],
+                                type: 'scatter',
+                                mode: 'markers',
+                                name: 'Trial 값',
+                                marker: {color: '#667eea', size: 8}
+                            }
+                        ];
+                        
+                        var layout = {
+                            title: 'CUSTOM_FOCAL_DL 최적화 과정',
+                            xaxis: {title: 'Trial 번호'},
+                            yaxis: {title: '성능 값'},
+                            height: 400
+                        };
+                        
+                        Plotly.newPlot('history_CUSTOM_FOCAL_DL', data, layout);
+                    </script>
+            
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_CUSTOM_FOCAL_DL"></div>
+                        </div>
+                        <script>
+                            var data = [
+                                {
+                                    x: [np.float64(0.5527430367731203), np.float64(0.1891650613308538), np.float64(0.11871085161077365), np.float64(0.05682249012361835), np.float64(0.04944549698884482), np.float64(0.01737823114632066), np.float64(0.015734513953152635), np.float64(3.1807331578758494e-07)],
+                                    y: ['focal_alpha', 'learning_rate', 'weight_decay', 'hidden_size', 'num_epochs', 'dropout_prob', 'num_layers', 'focal_gamma'],
+                                    type: 'bar',
+                                    orientation: 'h',
+                                    marker: {color: '#667eea'}
+                                }
+                            ];
+                            
+                            var layout = {
+                                title: 'CUSTOM_FOCAL_DL 파라미터 중요도',
+                                xaxis: {title: '중요도'},
+                                yaxis: {title: '파라미터'},
+                                height: 400
+                            };
+                            
+                            Plotly.newPlot('importance_CUSTOM_FOCAL_DL', data, layout);
+                        </script>
+                    
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_CUSTOM_FOCAL_DL"></div>
+                            </div>
+                            <script>
+                                var data = [
+                                    {
+                                        x: ['num_epochs vs focal_alpha', 'learning_rate vs num_epochs', 'learning_rate vs weight_decay', 'learning_rate vs focal_alpha', 'weight_decay vs num_layers'],
+                                        y: [np.float64(0.6205002931781523), np.float64(-0.5469291613971107), np.float64(0.5400570647594208), np.float64(-0.5373096201553333), np.float64(-0.4792718323751799)],
+                                        type: 'bar',
+                                        marker: {color: '#667eea'}
+                                    }
+                                ];
+                                
+                                var layout = {
+                                    title: 'CUSTOM_FOCAL_DL 파라미터 상관관계 (상위 5개)',
+                                    xaxis: {title: '파라미터 쌍'},
+                                    yaxis: {title: '상관계수'},
+                                    height: 400
+                                };
+                                
+                                Plotly.newPlot('correlation_CUSTOM_FOCAL_DL', data, layout);
+                            </script>
+                        
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 RF 상세 분석</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9747</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9615</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0154</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.9067 ~ 0.9747</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: 15개, 성능 범위: 0.9067 ~ 0.9747
+                    </div>
+            
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_RF"></div>
+                    </div>
+                    <script>
+                        var data = [
+                            {
+                                x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                y: [0.9066666666666666, 0.9746835443037974, 0.9615384615384616, 0.9681528662420382, 0.9554140127388535, 0.9681528662420382, 0.9615384615384616, 0.9615384615384616, 0.9681528662420382, 0.9615384615384616, 0.9681528662420382, 0.9685534591194969, 0.9685534591194969, 0.9685534591194969, 0.9615384615384616],
+                                type: 'scatter',
+                                mode: 'markers',
+                                name: 'Trial 값',
+                                marker: {color: '#667eea', size: 8}
+                            }
+                        ];
+                        
+                        var layout = {
+                            title: 'RF 최적화 과정',
+                            xaxis: {title: 'Trial 번호'},
+                            yaxis: {title: '성능 값'},
+                            height: 400
+                        };
+                        
+                        Plotly.newPlot('history_RF', data, layout);
+                    </script>
+            
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_RF"></div>
+                        </div>
+                        <script>
+                            var data = [
+                                {
+                                    x: [np.float64(0.5039032272613194), np.float64(0.22901292981336904), np.float64(0.1614878202434505), np.float64(0.1055960226818612)],
+                                    y: ['min_samples_leaf', 'n_estimators', 'max_depth', 'min_samples_split'],
+                                    type: 'bar',
+                                    orientation: 'h',
+                                    marker: {color: '#667eea'}
+                                }
+                            ];
+                            
+                            var layout = {
+                                title: 'RF 파라미터 중요도',
+                                xaxis: {title: '중요도'},
+                                yaxis: {title: '파라미터'},
+                                height: 400
+                            };
+                            
+                            Plotly.newPlot('importance_RF', data, layout);
+                        </script>
+                    
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_RF"></div>
+                            </div>
+                            <script>
+                                var data = [
+                                    {
+                                        x: ['n_estimators vs max_depth', 'max_depth vs min_samples_leaf', 'n_estimators vs min_samples_leaf', 'max_depth vs min_samples_split', 'min_samples_split vs min_samples_leaf'],
+                                        y: [np.float64(0.8206381351564201), np.float64(-0.7893370379638583), np.float64(-0.7337841222263191), np.float64(0.4755714712838285), np.float64(-0.28924061042487487)],
+                                        type: 'bar',
+                                        marker: {color: '#667eea'}
+                                    }
+                                ];
+                                
+                                var layout = {
+                                    title: 'RF 파라미터 상관관계 (상위 5개)',
+                                    xaxis: {title: '파라미터 쌍'},
+                                    yaxis: {title: '상관계수'},
+                                    height: 400
+                                };
+                                
+                                Plotly.newPlot('correlation_RF', data, layout);
+                            </script>
+                        
+                </div>
+        
+            </div>
+            
+            <div class="footer">
+                <p>🎯 Optuna HPO 분석 대시보드 (수정됨) | 생성 시간: 2025-08-06 09:22:24</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    

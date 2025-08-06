@@ -1,0 +1,950 @@
+
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🎯 Optuna HPO 완전한 대시보드</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f5f5;
+            }
+            .container {
+                max-width: 1600px;
+                margin: 0 auto;
+                background-color: white;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+            }
+            .header h1 {
+                margin: 0;
+                font-size: 2.5em;
+                font-weight: 300;
+            }
+            .header p {
+                margin: 10px 0 0 0;
+                opacity: 0.9;
+                font-size: 1.1em;
+            }
+            .content {
+                padding: 30px;
+            }
+            .section {
+                margin-bottom: 40px;
+                background-color: #fafafa;
+                border-radius: 8px;
+                padding: 25px;
+                border-left: 4px solid #667eea;
+            }
+            .section h2 {
+                color: #333;
+                margin-top: 0;
+                font-size: 1.8em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .model-section {
+                background-color: white;
+                border-radius: 8px;
+                padding: 25px;
+                margin-bottom: 30px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            .model-section h3 {
+                color: #667eea;
+                margin-top: 0;
+                font-size: 1.5em;
+                border-bottom: 2px solid #eee;
+                padding-bottom: 10px;
+            }
+            .chart-container {
+                margin: 20px 0;
+                text-align: center;
+                border: 1px solid #eee;
+                border-radius: 8px;
+                padding: 20px;
+                background-color: #fafafa;
+                min-height: 400px;
+            }
+            .filter-panel {
+                background-color: #e8f4fd;
+                border: 1px solid #b3d9ff;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 15px 0;
+            }
+            .filter-panel h4 {
+                margin: 0 0 10px 0;
+                color: #333;
+            }
+            .filter-controls {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+                flex-wrap: wrap;
+            }
+            .filter-controls select, .filter-controls input, .filter-controls button {
+                padding: 8px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+            .filter-controls button {
+                background-color: #667eea;
+                color: white;
+                border: none;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+            .filter-controls button:hover {
+                background-color: #5a6fd8;
+            }
+            .filter-controls button.reset {
+                background-color: #dc3545;
+            }
+            .filter-controls button.reset:hover {
+                background-color: #c82333;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+            .stat-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                text-align: center;
+            }
+            .stat-card h4 {
+                margin: 0 0 10px 0;
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .stat-card .value {
+                font-size: 2em;
+                font-weight: bold;
+                margin: 0;
+            }
+            .summary-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+            }
+            .summary-table th, .summary-table td {
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            .summary-table th {
+                background-color: #667eea;
+                color: white;
+                font-weight: bold;
+            }
+            .summary-table tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+            .summary-table tr:hover {
+                background-color: #f0f0f0;
+            }
+            .best-performance {
+                background-color: #ffd700 !important;
+                font-weight: bold;
+            }
+            .no-data {
+                text-align: center;
+                padding: 40px;
+                color: #666;
+                font-style: italic;
+            }
+            .debug-info {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 4px;
+                padding: 10px;
+                margin: 10px 0;
+                font-size: 0.9em;
+                color: #856404;
+            }
+            .footer {
+                background-color: #333;
+                color: white;
+                text-align: center;
+                padding: 20px;
+                margin-top: 40px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🎯 Optuna HPO 완전한 대시보드</h1>
+                <p>원래 차트 + 고급 시각화 + 필터 기능</p>
+                <p>생성 시간: 2025-08-06 10:55:03</p>
+            </div>
+            
+            <div class="content">
+    
+                <div class="section">
+                    <h2>📊 전체 실험 요약</h2>
+    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>총 Trial 수</h4>
+                            <div class="value">45</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>최고 모델</h4>
+                            <div class="value">CUSTOM_FOCAL_DL</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>분석 모델 수</h4>
+                            <div class="value">3</div>
+                        </div>
+                    </div>
+        
+                    <h3>🏆 모델별 성능 요약</h3>
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th>모델</th>
+                                <th>최고 성능</th>
+                                <th>평균 성능</th>
+                                <th>표준편차</th>
+                                <th>성공률</th>
+                                <th>수렴 상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    
+                            <tr class="">
+                                <td><strong>DCNV2</strong></td>
+                                <td>0.9747</td>
+                                <td>0.9121</td>
+                                <td>0.0789</td>
+                                <td>100.0%</td>
+                                <td>불안정</td>
+                            </tr>
+            
+                            <tr class="best-performance">
+                                <td><strong>CUSTOM_FOCAL_DL</strong></td>
+                                <td>0.9811</td>
+                                <td>0.8915</td>
+                                <td>0.1699</td>
+                                <td>100.0%</td>
+                                <td>수렴됨</td>
+                            </tr>
+            
+                            <tr class="">
+                                <td><strong>RF</strong></td>
+                                <td>0.9747</td>
+                                <td>0.9615</td>
+                                <td>0.0154</td>
+                                <td>100.0%</td>
+                                <td>불안정</td>
+                            </tr>
+            
+                        </tbody>
+                    </table>
+                </div>
+    
+                <div class="model-section">
+                    <h3>🎯 DCNV2 완전한 분석</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9747</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9121</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0789</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.7194 ~ 0.9747</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: 15개, 성능 범위: 0.7194 ~ 0.9747
+                    </div>
+            
+                    <div class="filter-panel">
+                        <h4>🔍 DCNV2 파라미터 필터</h4>
+                        <div class="filter-controls">
+                            <select id="dcnv2-param-selector">
+                                <option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="dropout_prob">dropout_prob</option><option value="num_layers">num_layers</option><option value="hidden_size">hidden_size</option><option value="num_epochs">num_epochs</option>
+                            </select>
+                            <input type="range" id="dcnv2-range" min="0" max="1" step="0.01" value="0.5">
+                            <span id="dcnv2-range-value">0.5</span>
+                            <button onclick="applyFilter('DCNV2')">필터 적용</button>
+                            <button class="reset" onclick="resetFilter('DCNV2')">필터 초기화</button>
+                        </div>
+                    </div>
+                
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_DCNV2"></div>
+                    </div>
+                    <script>
+                        try {
+                            var data = [
+                                {
+                                    x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                    y: [0.8175182481751825, 0.7761194029850746, 0.9615384615384616, 0.9281045751633987, 0.9681528662420382, 0.8571428571428571, 0.9411764705882353, 0.9548387096774194, 0.9044585987261147, 0.7194244604316546, 0.9746835443037974, 0.9746835443037974, 0.9681528662420382, 0.967741935483871, 0.9681528662420382],
+                                    type: 'scatter',
+                                    mode: 'markers',
+                                    name: 'Trial 값',
+                                    marker: {color: '#667eea', size: 8}
+                                }
+                            ];
+                            
+                            var layout = {
+                                title: 'DCNV2 최적화 과정',
+                                xaxis: {title: 'Trial 번호'},
+                                yaxis: {title: '성능 값'},
+                                height: 400
+                            };
+                            
+                            Plotly.newPlot('history_DCNV2', data, layout);
+                            console.log('DCNV2 최적화 과정 차트 생성 성공');
+                        } catch(e) {
+                            console.error('DCNV2 최적화 과정 차트 오류:', e);
+                            document.getElementById('history_DCNV2').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                        }
+                    </script>
+            
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_DCNV2"></div>
+                        </div>
+                        <script>
+                            try {
+                                var data = [
+                                    {
+                                        x: [0.6878261353243841, 0.12813019702267284, 0.11767464995609508, 0.032629411813926486, 0.02785685790158863, 0.005882747981332818],
+                                        y: ["num_layers", "learning_rate", "num_epochs", "dropout_prob", "hidden_size", "weight_decay"],
+                                        type: 'bar',
+                                        orientation: 'h',
+                                        marker: {color: '#667eea'},
+                                        text: ["0.6878", "0.1281", "0.1177", "0.0326", "0.0279", "0.0059"],
+                                        textposition: 'auto'
+                                    }
+                                ];
+                                
+                                var layout = {
+                                    title: 'DCNV2 파라미터 중요도 (높은 순)',
+                                    xaxis: {title: '중요도'},
+                                    yaxis: {title: '파라미터'},
+                                    height: 400,
+                                    margin: {l: 150, r: 50, t: 50, b: 50}
+                                };
+                                
+                                Plotly.newPlot('importance_DCNV2', data, layout);
+                                console.log('DCNV2 파라미터 중요도 차트 생성 성공');
+                            } catch(e) {
+                                console.error('DCNV2 파라미터 중요도 차트 오류:', e);
+                                document.getElementById('importance_DCNV2').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                            }
+                        </script>
+                    
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_DCNV2"></div>
+                            </div>
+                            <script>
+                                try {
+                                    var data = [
+                                        {
+                                            x: ["learning_rate vs dropout_prob", "learning_rate vs weight_decay", "learning_rate vs num_layers", "num_layers vs num_epochs", "dropout_prob vs num_epochs"],
+                                            y: [0.6468416187520898, 0.5901461874157068, -0.5434030967048904, 0.40824829046386296, -0.31868871959954914],
+                                            type: 'bar',
+                                            marker: {color: '#667eea'},
+                                            text: ["0.6468", "0.5901", "-0.5434", "0.4082", "-0.3187"],
+                                            textposition: 'auto'
+                                        }
+                                    ];
+                                    
+                                    var layout = {
+                                        title: 'DCNV2 파라미터 상관관계 (높은 순)',
+                                        xaxis: {title: '파라미터 쌍'},
+                                        yaxis: {title: '상관계수'},
+                                        height: 400,
+                                        margin: {l: 200, r: 50, t: 50, b: 50}
+                                    };
+                                    
+                                    Plotly.newPlot('correlation_DCNV2', data, layout);
+                                    console.log('DCNV2 파라미터 상관관계 차트 생성 성공');
+                                } catch(e) {
+                                    console.error('DCNV2 파라미터 상관관계 차트 오류:', e);
+                                    document.getElementById('correlation_DCNV2').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                                }
+                            </script>
+                        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-container">
+                        <div id="parallel_DCNV2"></div>
+                    </div>
+            
+                    <h4>📊 Contour Plot</h4>
+                    <div class="chart-container">
+                        <div id="contour_DCNV2"></div>
+                    </div>
+            
+                    <h4>📈 Slice Plot</h4>
+                    <div class="chart-container">
+                        <div id="slice_DCNV2"></div>
+                    </div>
+            
+                        <script>
+                            // DCNV2 차트 데이터
+                            var dcnv2_data = [{"value": 0.8175182481751825, "learning_rate": 0.0008736787274520204, "weight_decay": 0.0002517316230390575, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 256, "num_epochs": 25}, {"value": 0.7761194029850746, "learning_rate": 0.000940040984293038, "weight_decay": 0.00015965341361775696, "dropout_prob": 0.3, "num_layers": 5, "hidden_size": 256, "num_epochs": 20}, {"value": 0.9615384615384616, "learning_rate": 0.00084892848646251, "weight_decay": 2.4021980443930632e-05, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 512, "num_epochs": 20}, {"value": 0.9281045751633987, "learning_rate": 0.00253046325794967, "weight_decay": 0.00020104626997962877, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 25}, {"value": 0.9681528662420382, "learning_rate": 0.002340273175316132, "weight_decay": 9.46339798670121e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"value": 0.8571428571428571, "learning_rate": 0.0011414482586732306, "weight_decay": 4.0497702246533746e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 512, "num_epochs": 25}, {"value": 0.9411764705882353, "learning_rate": 0.0004962348204901114, "weight_decay": 6.433253508809061e-06, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 512, "num_epochs": 15}, {"value": 0.9548387096774194, "learning_rate": 0.0023208153009384364, "weight_decay": 1.4826554683767673e-06, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 512, "num_epochs": 25}, {"value": 0.9044585987261147, "learning_rate": 0.00022766487288290268, "weight_decay": 3.547875450483574e-05, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 25}, {"value": 0.7194244604316546, "learning_rate": 0.00022521054893444303, "weight_decay": 8.930848418641522e-05, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 128, "num_epochs": 15}, {"value": 0.9746835443037974, "learning_rate": 0.009197535335546824, "weight_decay": 0.0009338695067336967, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"value": 0.9746835443037974, "learning_rate": 0.008176959266489273, "weight_decay": 5.768100359014236e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"value": 0.9681528662420382, "learning_rate": 0.009775095976931013, "weight_decay": 0.0008302063000537359, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"value": 0.967741935483871, "learning_rate": 0.008004916964229813, "weight_decay": 1.1973783532378112e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}, {"value": 0.9681528662420382, "learning_rate": 0.004992895051239766, "weight_decay": 4.428038849479432e-06, "dropout_prob": 0.3, "num_layers": 3, "hidden_size": 256, "num_epochs": 20}];
+                            var dcnv2_numeric_cols = ["learning_rate", "weight_decay", "dropout_prob", "num_layers", "hidden_size", "num_epochs"];
+                            var dcnv2_top_params = ["learning_rate", "weight_decay"];
+                            
+                            // 초기 차트 생성
+                            createParallelCoordinate('DCNV2');
+                            createContourPlot('DCNV2');
+                            createSlicePlot('DCNV2');
+                        </script>
+                    
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 CUSTOM_FOCAL_DL 완전한 분석</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9811</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.8915</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.1699</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.5517 ~ 0.9811</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: 15개, 성능 범위: 0.5517 ~ 0.9811
+                    </div>
+            
+                    <div class="filter-panel">
+                        <h4>🔍 CUSTOM_FOCAL_DL 파라미터 필터</h4>
+                        <div class="filter-controls">
+                            <select id="custom_focal_dl-param-selector">
+                                <option value="learning_rate">learning_rate</option><option value="weight_decay">weight_decay</option><option value="dropout_prob">dropout_prob</option><option value="num_layers">num_layers</option><option value="hidden_size">hidden_size</option><option value="num_epochs">num_epochs</option><option value="focal_alpha">focal_alpha</option><option value="focal_gamma">focal_gamma</option>
+                            </select>
+                            <input type="range" id="custom_focal_dl-range" min="0" max="1" step="0.01" value="0.5">
+                            <span id="custom_focal_dl-range-value">0.5</span>
+                            <button onclick="applyFilter('CUSTOM_FOCAL_DL')">필터 적용</button>
+                            <button class="reset" onclick="resetFilter('CUSTOM_FOCAL_DL')">필터 초기화</button>
+                        </div>
+                    </div>
+                
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_CUSTOM_FOCAL_DL"></div>
+                    </div>
+                    <script>
+                        try {
+                            var data = [
+                                {
+                                    x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                    y: [0.9743589743589743, 0.5517241379310345, 0.5517241379310345, 0.9746835443037974, 0.9746835443037974, 0.975, 0.9811320754716981, 0.975, 0.975, 0.5517241379310345, 0.9746835443037974, 0.9811320754716981, 0.9811320754716981, 0.975, 0.975],
+                                    type: 'scatter',
+                                    mode: 'markers',
+                                    name: 'Trial 값',
+                                    marker: {color: '#667eea', size: 8}
+                                }
+                            ];
+                            
+                            var layout = {
+                                title: 'CUSTOM_FOCAL_DL 최적화 과정',
+                                xaxis: {title: 'Trial 번호'},
+                                yaxis: {title: '성능 값'},
+                                height: 400
+                            };
+                            
+                            Plotly.newPlot('history_CUSTOM_FOCAL_DL', data, layout);
+                            console.log('CUSTOM_FOCAL_DL 최적화 과정 차트 생성 성공');
+                        } catch(e) {
+                            console.error('CUSTOM_FOCAL_DL 최적화 과정 차트 오류:', e);
+                            document.getElementById('history_CUSTOM_FOCAL_DL').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                        }
+                    </script>
+            
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_CUSTOM_FOCAL_DL"></div>
+                        </div>
+                        <script>
+                            try {
+                                var data = [
+                                    {
+                                        x: [0.5636282045277691, 0.1880724987943087, 0.14902943772491425, 0.04698664488688517, 0.032889954007793515, 0.016456927137205517, 0.0029322223152069963, 4.1106059166803216e-06],
+                                        y: ["focal_alpha", "learning_rate", "weight_decay", "hidden_size", "num_epochs", "focal_gamma", "dropout_prob", "num_layers"],
+                                        type: 'bar',
+                                        orientation: 'h',
+                                        marker: {color: '#667eea'},
+                                        text: ["0.5636", "0.1881", "0.1490", "0.0470", "0.0329", "0.0165", "0.0029", "0.0000"],
+                                        textposition: 'auto'
+                                    }
+                                ];
+                                
+                                var layout = {
+                                    title: 'CUSTOM_FOCAL_DL 파라미터 중요도 (높은 순)',
+                                    xaxis: {title: '중요도'},
+                                    yaxis: {title: '파라미터'},
+                                    height: 400,
+                                    margin: {l: 150, r: 50, t: 50, b: 50}
+                                };
+                                
+                                Plotly.newPlot('importance_CUSTOM_FOCAL_DL', data, layout);
+                                console.log('CUSTOM_FOCAL_DL 파라미터 중요도 차트 생성 성공');
+                            } catch(e) {
+                                console.error('CUSTOM_FOCAL_DL 파라미터 중요도 차트 오류:', e);
+                                document.getElementById('importance_CUSTOM_FOCAL_DL').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                            }
+                        </script>
+                    
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_CUSTOM_FOCAL_DL"></div>
+                            </div>
+                            <script>
+                                try {
+                                    var data = [
+                                        {
+                                            x: ["num_epochs vs focal_alpha", "learning_rate vs num_epochs", "learning_rate vs weight_decay", "learning_rate vs focal_alpha", "weight_decay vs num_layers"],
+                                            y: [0.6205002931781523, -0.5469291613971107, 0.5400570647594208, -0.5373096201553333, -0.4792718323751799],
+                                            type: 'bar',
+                                            marker: {color: '#667eea'},
+                                            text: ["0.6205", "-0.5469", "0.5401", "-0.5373", "-0.4793"],
+                                            textposition: 'auto'
+                                        }
+                                    ];
+                                    
+                                    var layout = {
+                                        title: 'CUSTOM_FOCAL_DL 파라미터 상관관계 (높은 순)',
+                                        xaxis: {title: '파라미터 쌍'},
+                                        yaxis: {title: '상관계수'},
+                                        height: 400,
+                                        margin: {l: 200, r: 50, t: 50, b: 50}
+                                    };
+                                    
+                                    Plotly.newPlot('correlation_CUSTOM_FOCAL_DL', data, layout);
+                                    console.log('CUSTOM_FOCAL_DL 파라미터 상관관계 차트 생성 성공');
+                                } catch(e) {
+                                    console.error('CUSTOM_FOCAL_DL 파라미터 상관관계 차트 오류:', e);
+                                    document.getElementById('correlation_CUSTOM_FOCAL_DL').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                                }
+                            </script>
+                        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-container">
+                        <div id="parallel_CUSTOM_FOCAL_DL"></div>
+                    </div>
+            
+                    <h4>📊 Contour Plot</h4>
+                    <div class="chart-container">
+                        <div id="contour_CUSTOM_FOCAL_DL"></div>
+                    </div>
+            
+                    <h4>📈 Slice Plot</h4>
+                    <div class="chart-container">
+                        <div id="slice_CUSTOM_FOCAL_DL"></div>
+                    </div>
+            
+                        <script>
+                            // CUSTOM_FOCAL_DL 차트 데이터
+                            var custom_focal_dl_data = [{"value": 0.9743589743589743, "learning_rate": 0.003492938202716521, "weight_decay": 0.00020661407459960103, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 256, "num_epochs": 15, "focal_alpha": 0.25, "focal_gamma": 1.0}, {"value": 0.5517241379310345, "learning_rate": 0.00010935945827367073, "weight_decay": 1.0931748438732457e-06, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 25, "focal_alpha": 1.0, "focal_gamma": 1.0}, {"value": 0.5517241379310345, "learning_rate": 0.000595703331198028, "weight_decay": 1.0620080260257175e-06, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 512, "num_epochs": 20, "focal_alpha": 1.0, "focal_gamma": 1.0}, {"value": 0.9746835443037974, "learning_rate": 0.0011542014244408628, "weight_decay": 1.3880693769091389e-06, "dropout_prob": 0.2, "num_layers": 4, "hidden_size": 128, "num_epochs": 20, "focal_alpha": 0.25, "focal_gamma": 3.0}, {"value": 0.9746835443037974, "learning_rate": 0.00603580416457654, "weight_decay": 7.658479997231717e-06, "dropout_prob": 0.3, "num_layers": 4, "hidden_size": 256, "num_epochs": 20, "focal_alpha": 0.5, "focal_gamma": 1.0}, {"value": 0.975, "learning_rate": 0.0013086995737173752, "weight_decay": 5.341111770623563e-05, "dropout_prob": 0.2, "num_layers": 5, "hidden_size": 128, "num_epochs": 20, "focal_alpha": 0.75, "focal_gamma": 2.0}, {"value": 0.9811320754716981, "learning_rate": 0.007979621928763064, "weight_decay": 0.00034017004136274465, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 256, "num_epochs": 20, "focal_alpha": 0.5, "focal_gamma": 1.0}, {"value": 0.975, "learning_rate": 0.004517047505550565, "weight_decay": 5.8464559824506605e-05, "dropout_prob": 0.1, "num_layers": 4, "hidden_size": 256, "num_epochs": 20, "focal_alpha": 0.25, "focal_gamma": 1.0}, {"value": 0.975, "learning_rate": 0.0006182670503355834, "weight_decay": 3.794519432129586e-05, "dropout_prob": 0.3, "num_layers": 5, "hidden_size": 128, "num_epochs": 20, "focal_alpha": 0.75, "focal_gamma": 1.0}, {"value": 0.5517241379310345, "learning_rate": 0.00014035631842551662, "weight_decay": 2.5516611009360743e-05, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 512, "num_epochs": 25, "focal_alpha": 1.0, "focal_gamma": 3.0}, {"value": 0.9746835443037974, "learning_rate": 0.009413974699413994, "weight_decay": 0.0008474425970489768, "dropout_prob": 0.1, "num_layers": 3, "hidden_size": 256, "num_epochs": 15, "focal_alpha": 0.5, "focal_gamma": 2.0}, {"value": 0.9811320754716981, "learning_rate": 0.002324493476697746, "weight_decay": 0.0002926442948335003, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 20, "focal_alpha": 0.75, "focal_gamma": 2.0}, {"value": 0.9811320754716981, "learning_rate": 0.0022753951231145567, "weight_decay": 0.0007970804091573641, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 128, "num_epochs": 20, "focal_alpha": 0.5, "focal_gamma": 2.0}, {"value": 0.975, "learning_rate": 0.0021444445300688522, "weight_decay": 0.00028868285447964666, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 256, "num_epochs": 25, "focal_alpha": 0.75, "focal_gamma": 2.0}, {"value": 0.975, "learning_rate": 0.0002864970251685883, "weight_decay": 0.00017839941716431555, "dropout_prob": 0.2, "num_layers": 3, "hidden_size": 512, "num_epochs": 20, "focal_alpha": 0.75, "focal_gamma": 2.0}];
+                            var custom_focal_dl_numeric_cols = ["learning_rate", "weight_decay", "dropout_prob", "num_layers", "hidden_size", "num_epochs", "focal_alpha", "focal_gamma"];
+                            var custom_focal_dl_top_params = ["learning_rate", "weight_decay"];
+                            
+                            // 초기 차트 생성
+                            createParallelCoordinate('CUSTOM_FOCAL_DL');
+                            createContourPlot('CUSTOM_FOCAL_DL');
+                            createSlicePlot('CUSTOM_FOCAL_DL');
+                        </script>
+                    
+                </div>
+        
+                <div class="model-section">
+                    <h3>🎯 RF 완전한 분석</h3>
+        
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h4>최고 성능</h4>
+                            <div class="value">0.9747</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>평균 성능</h4>
+                            <div class="value">0.9615</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>표준편차</h4>
+                            <div class="value">0.0154</div>
+                        </div>
+                        <div class="stat-card">
+                            <h4>성능 범위</h4>
+                            <div class="value">0.9067 ~ 0.9747</div>
+                        </div>
+                    </div>
+                    
+                    <div class="debug-info">
+                        <strong>디버그 정보:</strong> 완료된 Trial: 15개, 성능 범위: 0.9067 ~ 0.9747
+                    </div>
+            
+                    <div class="filter-panel">
+                        <h4>🔍 RF 파라미터 필터</h4>
+                        <div class="filter-controls">
+                            <select id="rf-param-selector">
+                                <option value="n_estimators">n_estimators</option><option value="max_depth">max_depth</option><option value="min_samples_split">min_samples_split</option><option value="min_samples_leaf">min_samples_leaf</option>
+                            </select>
+                            <input type="range" id="rf-range" min="0" max="1" step="0.01" value="0.5">
+                            <span id="rf-range-value">0.5</span>
+                            <button onclick="applyFilter('RF')">필터 적용</button>
+                            <button class="reset" onclick="resetFilter('RF')">필터 초기화</button>
+                        </div>
+                    </div>
+                
+                    <h4>📈 최적화 과정</h4>
+                    <div class="chart-container">
+                        <div id="history_RF"></div>
+                    </div>
+                    <script>
+                        try {
+                            var data = [
+                                {
+                                    x: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                    y: [0.9066666666666666, 0.9746835443037974, 0.9615384615384616, 0.9681528662420382, 0.9554140127388535, 0.9681528662420382, 0.9615384615384616, 0.9615384615384616, 0.9681528662420382, 0.9615384615384616, 0.9681528662420382, 0.9685534591194969, 0.9685534591194969, 0.9685534591194969, 0.9615384615384616],
+                                    type: 'scatter',
+                                    mode: 'markers',
+                                    name: 'Trial 값',
+                                    marker: {color: '#667eea', size: 8}
+                                }
+                            ];
+                            
+                            var layout = {
+                                title: 'RF 최적화 과정',
+                                xaxis: {title: 'Trial 번호'},
+                                yaxis: {title: '성능 값'},
+                                height: 400
+                            };
+                            
+                            Plotly.newPlot('history_RF', data, layout);
+                            console.log('RF 최적화 과정 차트 생성 성공');
+                        } catch(e) {
+                            console.error('RF 최적화 과정 차트 오류:', e);
+                            document.getElementById('history_RF').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                        }
+                    </script>
+            
+                        <h4>🔍 파라미터 중요도</h4>
+                        <div class="chart-container">
+                            <div id="importance_RF"></div>
+                        </div>
+                        <script>
+                            try {
+                                var data = [
+                                    {
+                                        x: [0.5674156194178916, 0.21872066998034062, 0.12410638221203243, 0.08975732838973532],
+                                        y: ["min_samples_leaf", "n_estimators", "max_depth", "min_samples_split"],
+                                        type: 'bar',
+                                        orientation: 'h',
+                                        marker: {color: '#667eea'},
+                                        text: ["0.5674", "0.2187", "0.1241", "0.0898"],
+                                        textposition: 'auto'
+                                    }
+                                ];
+                                
+                                var layout = {
+                                    title: 'RF 파라미터 중요도 (높은 순)',
+                                    xaxis: {title: '중요도'},
+                                    yaxis: {title: '파라미터'},
+                                    height: 400,
+                                    margin: {l: 150, r: 50, t: 50, b: 50}
+                                };
+                                
+                                Plotly.newPlot('importance_RF', data, layout);
+                                console.log('RF 파라미터 중요도 차트 생성 성공');
+                            } catch(e) {
+                                console.error('RF 파라미터 중요도 차트 오류:', e);
+                                document.getElementById('importance_RF').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                            }
+                        </script>
+                    
+                            <h4>🔄 파라미터 상관관계</h4>
+                            <div class="chart-container">
+                                <div id="correlation_RF"></div>
+                            </div>
+                            <script>
+                                try {
+                                    var data = [
+                                        {
+                                            x: ["n_estimators vs max_depth", "max_depth vs min_samples_leaf", "n_estimators vs min_samples_leaf", "max_depth vs min_samples_split", "min_samples_split vs min_samples_leaf"],
+                                            y: [0.8206381351564201, -0.7893370379638583, -0.7337841222263191, 0.4755714712838285, -0.28924061042487487],
+                                            type: 'bar',
+                                            marker: {color: '#667eea'},
+                                            text: ["0.8206", "-0.7893", "-0.7338", "0.4756", "-0.2892"],
+                                            textposition: 'auto'
+                                        }
+                                    ];
+                                    
+                                    var layout = {
+                                        title: 'RF 파라미터 상관관계 (높은 순)',
+                                        xaxis: {title: '파라미터 쌍'},
+                                        yaxis: {title: '상관계수'},
+                                        height: 400,
+                                        margin: {l: 200, r: 50, t: 50, b: 50}
+                                    };
+                                    
+                                    Plotly.newPlot('correlation_RF', data, layout);
+                                    console.log('RF 파라미터 상관관계 차트 생성 성공');
+                                } catch(e) {
+                                    console.error('RF 파라미터 상관관계 차트 오류:', e);
+                                    document.getElementById('correlation_RF').innerHTML = '<div class="no-data">차트 생성 오류: ' + e.message + '</div>';
+                                }
+                            </script>
+                        
+                    <h4>🔄 Parallel Coordinate Plot</h4>
+                    <div class="chart-container">
+                        <div id="parallel_RF"></div>
+                    </div>
+            
+                    <h4>📊 Contour Plot</h4>
+                    <div class="chart-container">
+                        <div id="contour_RF"></div>
+                    </div>
+            
+                    <h4>📈 Slice Plot</h4>
+                    <div class="chart-container">
+                        <div id="slice_RF"></div>
+                    </div>
+            
+                        <script>
+                            // RF 차트 데이터
+                            var rf_data = [{"value": 0.9066666666666666, "n_estimators": 50, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 2}, {"value": 0.9746835443037974, "n_estimators": 200, "max_depth": 15, "min_samples_split": 2, "min_samples_leaf": 1}, {"value": 0.9615384615384616, "n_estimators": 100, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 4}, {"value": 0.9681528662420382, "n_estimators": 200, "max_depth": 10, "min_samples_split": 2, "min_samples_leaf": 1}, {"value": 0.9554140127388535, "n_estimators": 50, "max_depth": 10, "min_samples_split": 10, "min_samples_leaf": 2}, {"value": 0.9681528662420382, "n_estimators": 200, "max_depth": 15, "min_samples_split": 5, "min_samples_leaf": 1}, {"value": 0.9615384615384616, "n_estimators": 50, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 2}, {"value": 0.9615384615384616, "n_estimators": 50, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 4}, {"value": 0.9681528662420382, "n_estimators": 200, "max_depth": 10, "min_samples_split": 10, "min_samples_leaf": 1}, {"value": 0.9615384615384616, "n_estimators": 100, "max_depth": 5, "min_samples_split": 2, "min_samples_leaf": 4}, {"value": 0.9681528662420382, "n_estimators": 200, "max_depth": 15, "min_samples_split": 5, "min_samples_leaf": 1}, {"value": 0.9685534591194969, "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"value": 0.9685534591194969, "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"value": 0.9685534591194969, "n_estimators": 200, "max_depth": null, "min_samples_split": 2, "min_samples_leaf": 1}, {"value": 0.9615384615384616, "n_estimators": 200, "max_depth": 15, "min_samples_split": 10, "min_samples_leaf": 1}];
+                            var rf_numeric_cols = ["n_estimators", "max_depth", "min_samples_split", "min_samples_leaf"];
+                            var rf_top_params = ["n_estimators", "max_depth"];
+                            
+                            // 초기 차트 생성
+                            createParallelCoordinate('RF');
+                            createContourPlot('RF');
+                            createSlicePlot('RF');
+                        </script>
+                    
+                </div>
+        
+            </div>
+            
+            <div class="footer">
+                <p>🎯 Optuna HPO 완전한 대시보드 | 생성 시간: 2025-08-06 10:55:07</p>
+            </div>
+        </div>
+        
+        <script>
+            // 필터 적용 함수
+            function applyFilter(modelType) {
+                const paramSelector = document.getElementById(modelType.toLowerCase() + '-param-selector');
+                const rangeSlider = document.getElementById(modelType.toLowerCase() + '-range');
+                const rangeValue = document.getElementById(modelType.toLowerCase() + '-range-value');
+                
+                const selectedParam = paramSelector.value;
+                const selectedValue = parseFloat(rangeSlider.value);
+                rangeValue.textContent = selectedValue.toFixed(2);
+                
+                console.log('필터 적용:', modelType, selectedParam, selectedValue);
+                
+                // 6개 차트 모두 업데이트
+                updateOptimizationHistory(modelType, selectedParam, selectedValue);
+                updateParameterImportance(modelType, selectedParam, selectedValue);
+                updateParameterCorrelation(modelType, selectedParam, selectedValue);
+                updateParallelCoordinate(modelType, selectedParam, selectedValue);
+                updateContourPlot(modelType, selectedParam, selectedValue);
+                updateSlicePlot(modelType, selectedParam, selectedValue);
+            }
+            
+            // 필터 초기화 함수
+            function resetFilter(modelType) {
+                const rangeSlider = document.getElementById(modelType.toLowerCase() + '-range');
+                const rangeValue = document.getElementById(modelType.toLowerCase() + '-range-value');
+                
+                rangeSlider.value = 0.5;
+                rangeValue.textContent = '0.50';
+                
+                // 차트 초기화
+                location.reload(); // 간단하게 페이지 새로고침
+            }
+            
+            // Parallel Coordinate Plot 생성
+            function createParallelCoordinate(modelType) {
+                const data = window[modelType.toLowerCase() + '_data'];
+                const numericCols = window[modelType.toLowerCase() + '_numeric_cols'];
+                
+                if (!data || !numericCols || numericCols.length < 2) {
+                    document.getElementById('parallel_' + modelType).innerHTML = '<div class="no-data">데이터 부족</div>';
+                    return;
+                }
+                
+                const dimensions = [];
+                dimensions.push({
+                    label: 'Performance',
+                    values: data.map(d => d.value)
+                });
+                
+                numericCols.forEach(col => {
+                    dimensions.push({
+                        label: col,
+                        values: data.map(d => d[col])
+                    });
+                });
+                
+                const plotData = [{
+                    type: 'parcoords',
+                    line: {
+                        color: data.map(d => d.value),
+                        colorscale: 'Viridis'
+                    },
+                    dimensions: dimensions
+                }];
+                
+                const layout = {
+                    title: modelType + ' Parallel Coordinate Plot',
+                    height: 400
+                };
+                
+                Plotly.newPlot('parallel_' + modelType, plotData, layout);
+            }
+            
+            // Contour Plot 생성
+            function createContourPlot(modelType) {
+                const data = window[modelType.toLowerCase() + '_data'];
+                const topParams = window[modelType.toLowerCase() + '_top_params'];
+                
+                if (!data || !topParams || topParams.length < 2) {
+                    document.getElementById('contour_' + modelType).innerHTML = '<div class="no-data">데이터 부족</div>';
+                    return;
+                }
+                
+                const x = data.map(d => d[topParams[0]]);
+                const y = data.map(d => d[topParams[1]]);
+                const z = data.map(d => d.value);
+                
+                const plotData = [{
+                    type: 'contour',
+                    x: x,
+                    y: y,
+                    z: z,
+                    colorscale: 'Viridis'
+                }];
+                
+                const layout = {
+                    title: modelType + ' Contour Plot (' + topParams[0] + ' vs ' + topParams[1] + ')',
+                    xaxis: {title: topParams[0]},
+                    yaxis: {title: topParams[1]},
+                    height: 400
+                };
+                
+                Plotly.newPlot('contour_' + modelType, plotData, layout);
+            }
+            
+            // Slice Plot 생성
+            function createSlicePlot(modelType) {
+                const data = window[modelType.toLowerCase() + '_data'];
+                const numericCols = window[modelType.toLowerCase() + '_numeric_cols'];
+                
+                if (!data || !numericCols || numericCols.length === 0) {
+                    document.getElementById('slice_' + modelType).innerHTML = '<div class="no-data">데이터 부족</div>';
+                    return;
+                }
+                
+                const selectedParam = numericCols[0];
+                const x = data.map(d => d[selectedParam]);
+                const y = data.map(d => d.value);
+                
+                const plotData = [{
+                    type: 'scatter',
+                    mode: 'markers',
+                    x: x,
+                    y: y,
+                    marker: {
+                        color: y,
+                        colorscale: 'Viridis',
+                        size: 8
+                    }
+                }];
+                
+                const layout = {
+                    title: modelType + ' Slice Plot (' + selectedParam + ')',
+                    xaxis: {title: selectedParam},
+                    yaxis: {title: 'Performance'},
+                    height: 400
+                };
+                
+                Plotly.newPlot('slice_' + modelType, plotData, layout);
+            }
+            
+            // 차트 업데이트 함수들 (필터 적용 시)
+            function updateOptimizationHistory(modelType, selectedParam, selectedValue) {
+                console.log('최적화 과정 업데이트:', modelType, selectedParam, selectedValue);
+            }
+            
+            function updateParameterImportance(modelType, selectedParam, selectedValue) {
+                console.log('파라미터 중요도 업데이트:', modelType, selectedParam, selectedValue);
+            }
+            
+            function updateParameterCorrelation(modelType, selectedParam, selectedValue) {
+                console.log('파라미터 상관관계 업데이트:', modelType, selectedParam, selectedValue);
+            }
+            
+            function updateParallelCoordinate(modelType, selectedParam, selectedValue) {
+                console.log('Parallel Coordinate 업데이트:', modelType, selectedParam, selectedValue);
+            }
+            
+            function updateContourPlot(modelType, selectedParam, selectedValue) {
+                console.log('Contour Plot 업데이트:', modelType, selectedParam, selectedValue);
+            }
+            
+            function updateSlicePlot(modelType, selectedParam, selectedValue) {
+                console.log('Slice Plot 업데이트:', modelType, selectedParam, selectedValue);
+            }
+            
+            // 페이지 로드 완료 후 초기화
+            window.addEventListener('load', function() {
+                console.log('완전한 대시보드 로드 완료');
+            });
+        </script>
+    </body>
+    </html>
+    

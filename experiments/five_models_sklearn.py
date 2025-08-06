@@ -12,6 +12,7 @@ from custom_models.tabular_dcnv2_fuxictr_torch_model_fixed import TabularDCNv2Fu
 from custom_models.focal_loss_implementation import CustomFocalDLModel
 from custom_models.custom_nn_torch_model import CustomNNTorchModel
 from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_breast_cancer
 from autogluon.common import space
 
 # 모델 등록
@@ -21,38 +22,38 @@ ag_model_registry.add(TabularDCNv2FuxiCTRTorchModel)
 ag_model_registry.add(CustomFocalDLModel)
 ag_model_registry.add(CustomNNTorchModel)
 
-# 데이터 로드
-df = pd.read_csv("datasets/creditcard.csv")
-df["Class"] = df["Class"].astype("category")  # AutoGluon에서 분류로 인식하게
-# 학습 데이터만 분리 (AutoGluon이 자동으로 holdout 분할 수행)
-train_data, test_data = train_test_split(df, test_size=0.2, stratify=df["Class"], random_state=42)
+# sklearn 내장 데이터셋 로드
+print("=== sklearn breast_cancer 데이터셋 로드 ===")
+breast_cancer = load_breast_cancer()
 
-print(f"학습 데이터 크기: {train_data.shape}")
-print(f"학습 데이터 클래스 분포:\n{train_data['Class'].value_counts()}")
-print(f"학습 데이터 클래스 비율:\n{train_data['Class'].value_counts(normalize=True)}")
+# DataFrame 변환
+df = pd.DataFrame(breast_cancer.data, columns=breast_cancer.feature_names)
+df["target"] = breast_cancer.target
 
-print("\n=== 4개 모델 동시 학습 (DCNv2, CustomFocalDLModel, RandomForest, CustomNNTorchModel) ===")
+# 클래스 분포 확인
+print("데이터 크기:", df.shape)
+print("클래스 분포:\n", df["target"].value_counts())
+print("클래스 비율:\n", df["target"].value_counts(normalize=True))
+print("데이터 샘플:")
+print(df.head())
+
+# 학습/테스트 분할
+train_data, test_data = train_test_split(df, test_size=0.2, stratify=df["target"], random_state=42)
+
+print(f"\n학습 데이터 크기: {train_data.shape}")
+print(f"학습 데이터 클래스 분포:\n{train_data['target'].value_counts()}")
+print(f"학습 데이터 클래스 비율:\n{train_data['target'].value_counts(normalize=True)}")
+
+print(f"\n테스트 데이터 크기: {test_data.shape}")
+print(f"테스트 데이터 클래스 분포:\n{test_data['target'].value_counts()}")
+print(f"테스트 데이터 클래스 비율:\n{test_data['target'].value_counts(normalize=True)}")
+
+print("\n=== 5개 모델 동시 학습 (DCNv2, DCNv2_FUXICTR, CustomFocalDLModel, RandomForest, CustomNNTorchModel) ===")
 
 # 5개 모델을 한 번에 학습 (AutoGluon 자동 holdout 분할 사용)
-predictor = TabularPredictor(label="Class", problem_type="binary", eval_metric="f1", path="models/five_models_experiment").fit(
+predictor = TabularPredictor(label="target", problem_type="binary", eval_metric="f1", path="models/five_models_sklearn").fit(
     train_data,
     hyperparameters={
-        # DeepFM - 수치형 특성만 있는 경우 부적합 (주석처리)
-        # "DEEPFM": {
-        #     "fm_dropout": 0.1,
-        #     "fm_embedding_dim": 16,  # 논문에서 권장하는 임베딩 차원
-        #     "deep_output_size": 128,  # 논문에서 권장하는 출력 크기
-        #     "deep_hidden_size": 128,  # 논문에서 권장하는 히든 크기
-        #     "deep_dropout": 0.1,
-        #     "deep_layers": 3,  # 논문에서 권장하는 레이어 수
-        #     # 조기 종료 설정
-        #     'epochs_wo_improve': 15,  # 충분한 학습 시간
-        #     'num_epochs': 25,         # 충분한 학습 시간
-        #     # Cosine Annealing Learning Rate Scheduler 설정
-        #     "lr_scheduler": True,
-        #     "scheduler_type": "cosine",
-        #     "lr_scheduler_min_lr": 1e-6,
-        # },
         # DCNv2 - 수치형 특성에 적합한 모델 (최고 성능 하이퍼파라미터 적용)
         "DCNV2": {
             "num_cross_layers": 2,
@@ -144,7 +145,6 @@ predictor = TabularPredictor(label="Class", problem_type="binary", eval_metric="
     },
     time_limit=900,  # 15분
     verbosity=4,  # 최고 verbosity (가장 자세한 로그)
-    # holdout_frac=0.2,  # 검증 데이터를 20%로 늘림
 )
 
 print("\n=== 학습 완료! 결과 확인 ===")
@@ -250,4 +250,4 @@ print(f"확률 예측 형태: {probabilities.shape}")
 print(f"예측값 샘플: {predictions.head()}")
 print(f"확률값 샘플:\n{probabilities.head()}")
 
-print("\n=== 5개 모델 학습 완료! ===") 
+print("\n=== sklearn breast_cancer 데이터셋으로 5개 모델 학습 완료! ===") 

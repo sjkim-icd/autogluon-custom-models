@@ -6,148 +6,156 @@ import pandas as pd
 import numpy as np
 from autogluon.tabular import TabularPredictor
 from autogluon.tabular.registry import ag_model_registry
-# from custom_models.tabular_deepfm_torch_model import TabularDeepFMTorchModel  # 백업됨
+from custom_models.tabular_deepfm_torch_model import TabularDeepFMTorchModel
 from custom_models.tabular_dcnv2_torch_model import TabularDCNv2TorchModel
 from custom_models.tabular_dcnv2_fuxictr_torch_model_fixed import TabularDCNv2FuxiCTRTorchModel
 from custom_models.focal_loss_implementation import CustomFocalDLModel
 from custom_models.custom_nn_torch_model import CustomNNTorchModel
 from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_breast_cancer
 from autogluon.common import space
 
 # 모델 등록
-# ag_model_registry.add(TabularDeepFMTorchModel)  # 백업됨
+ag_model_registry.add(TabularDeepFMTorchModel)
 ag_model_registry.add(TabularDCNv2TorchModel)
 ag_model_registry.add(TabularDCNv2FuxiCTRTorchModel)
 ag_model_registry.add(CustomFocalDLModel)
 ag_model_registry.add(CustomNNTorchModel)
 
-# 데이터 로드
-df = pd.read_csv("datasets/creditcard.csv")
-df["Class"] = df["Class"].astype("category")  # AutoGluon에서 분류로 인식하게
-# 학습 데이터만 분리 (AutoGluon이 자동으로 holdout 분할 수행)
-train_data, test_data = train_test_split(df, test_size=0.2, stratify=df["Class"], random_state=42)
+# sklearn 내장 데이터셋 로드
+print("=== sklearn breast_cancer 데이터셋 로드 ===")
+breast_cancer = load_breast_cancer()
 
-print(f"학습 데이터 크기: {train_data.shape}")
-print(f"학습 데이터 클래스 분포:\n{train_data['Class'].value_counts()}")
-print(f"학습 데이터 클래스 비율:\n{train_data['Class'].value_counts(normalize=True)}")
+# DataFrame 변환
+df = pd.DataFrame(breast_cancer.data, columns=breast_cancer.feature_names)
+df["target"] = breast_cancer.target
 
-print("\n=== 4개 모델 동시 학습 (DCNv2, CustomFocalDLModel, RandomForest, CustomNNTorchModel) ===")
+# 클래스 분포 확인
+print("데이터 크기:", df.shape)
+print("클래스 분포:\n", df["target"].value_counts())
+print("클래스 비율:\n", df["target"].value_counts(normalize=True))
+print("데이터 샘플:")
+print(df.head())
 
-# 5개 모델을 한 번에 학습 (AutoGluon 자동 holdout 분할 사용)
-predictor = TabularPredictor(label="Class", problem_type="binary", eval_metric="f1", path="models/five_models_experiment").fit(
+# 학습/테스트 분할
+train_data, test_data = train_test_split(df, test_size=0.2, stratify=df["target"], random_state=42)
+
+print(f"\n학습 데이터 크기: {train_data.shape}")
+print(f"학습 데이터 클래스 분포:\n{train_data['target'].value_counts()}")
+print(f"학습 데이터 클래스 비율:\n{train_data['target'].value_counts(normalize=True)}")
+
+print(f"\n테스트 데이터 크기: {test_data.shape}")
+print(f"테스트 데이터 클래스 분포:\n{test_data['target'].value_counts()}")
+print(f"테스트 데이터 클래스 비율:\n{test_data['target'].value_counts(normalize=True)}")
+
+print("\n=== 5개 모델 HPO 실험 (DCNv2, DCNv2_FUXICTR, CustomFocalDLModel, RandomForest, CustomNNTorchModel) ===")
+
+# 5개 모델을 HPO와 함께 학습
+predictor = TabularPredictor(label="target", problem_type="binary", eval_metric="f1", path="models/five_models_sklearn_hpo").fit(
     train_data,
     hyperparameters={
-        # DeepFM - 수치형 특성만 있는 경우 부적합 (주석처리)
-        # "DEEPFM": {
-        #     "fm_dropout": 0.1,
-        #     "fm_embedding_dim": 16,  # 논문에서 권장하는 임베딩 차원
-        #     "deep_output_size": 128,  # 논문에서 권장하는 출력 크기
-        #     "deep_hidden_size": 128,  # 논문에서 권장하는 히든 크기
-        #     "deep_dropout": 0.1,
-        #     "deep_layers": 3,  # 논문에서 권장하는 레이어 수
-        #     # 조기 종료 설정
-        #     'epochs_wo_improve': 15,  # 충분한 학습 시간
-        #     'num_epochs': 25,         # 충분한 학습 시간
-        #     # Cosine Annealing Learning Rate Scheduler 설정
-        #     "lr_scheduler": True,
-        #     "scheduler_type": "cosine",
-        #     "lr_scheduler_min_lr": 1e-6,
-        # },
-        # DCNv2 - 수치형 특성에 적합한 모델 (최고 성능 하이퍼파라미터 적용)
+        # DCNv2 - HPO 적용
         "DCNV2": {
-            "num_cross_layers": 2,
-            "cross_dropout": 0.1181,
-            "low_rank": 29,
-            "deep_output_size": 98,
-            "deep_hidden_size": 91,
-            "deep_dropout": 0.1583,
-            "deep_layers": 3,
-            'epochs_wo_improve': 5,
-            'num_epochs': 20,
+            "num_cross_layers": space.Categorical(1, 2, 3),
+            "cross_dropout": space.Real(0.1, 0.3),
+            "low_rank": space.Int(20, 40),
+            "deep_output_size": space.Int(64, 128),
+            "deep_hidden_size": space.Int(64, 128),
+            "deep_dropout": space.Real(0.1, 0.3),
+            "deep_layers": space.Categorical(2, 3, 4),
+            'epochs_wo_improve': space.Categorical(5, 10),
+            'num_epochs': space.Categorical(15, 20, 25),
             "lr_scheduler": True,
             "scheduler_type": "cosine",
             "lr_scheduler_min_lr": 1e-6,
-            "learning_rate": 0.000629,
-            "weight_decay": 5.68e-12,
-            "dropout_prob": 0.5,
-            "activation": "relu",
+            "learning_rate": space.Real(0.0001, 0.001),
+            "weight_decay": space.Real(1e-6, 1e-4),
+            "dropout_prob": space.Real(0.3, 0.6),
+            "activation": space.Categorical("relu", "elu"),
             "optimizer": "adam",
-            "hidden_size": 128,
+            "hidden_size": space.Categorical(64, 128, 256),
             "use_batchnorm": True,
         },
-        # FuxiCTR DCNv2 - MoE 구조의 DCNv2 (최고 성능 하이퍼파라미터 적용)
+        # FuxiCTR DCNv2 - HPO 적용
         "DCNV2_FUXICTR": {
-            "num_cross_layers": 2,
-            "cross_dropout": 0.1181,
-            "low_rank": 29,
-            "deep_output_size": 98,
-            "deep_hidden_size": 91,
-            "deep_dropout": 0.1583,
-            "deep_layers": 3,
-            'epochs_wo_improve': 5,
-            'num_epochs': 20,
+            "num_cross_layers": space.Categorical(1, 2, 3),
+            "cross_dropout": space.Real(0.1, 0.3),
+            "low_rank": space.Int(20, 40),
+            "deep_output_size": space.Int(64, 128),
+            "deep_hidden_size": space.Int(64, 128),
+            "deep_dropout": space.Real(0.1, 0.3),
+            "deep_layers": space.Categorical(2, 3, 4),
+            'epochs_wo_improve': space.Categorical(5, 10),
+            'num_epochs': space.Categorical(15, 20, 25),
             "lr_scheduler": True,
             "scheduler_type": "cosine",
             "lr_scheduler_min_lr": 1e-6,
-            "learning_rate": 0.000629,
-            "weight_decay": 5.68e-12,
-            "dropout_prob": 0.5,
-            "activation": "relu",
+            "learning_rate": space.Real(0.0001, 0.001),
+            "weight_decay": space.Real(1e-6, 1e-4),
+            "dropout_prob": space.Real(0.3, 0.6),
+            "activation": space.Categorical("relu", "elu"),
             "optimizer": "adam",
-            "hidden_size": 128,
+            "hidden_size": space.Categorical(64, 128, 256),
             "use_batchnorm": True,
             # FuxiCTR 특화 파라미터
             "use_low_rank_mixture": True,
-            "num_experts": 4,
-            "model_structure": "parallel",
+            "num_experts": space.Categorical(2, 4, 6),
+            "model_structure": space.Categorical("parallel", "sequential"),
         },
-        # CustomFocalDLModel (Focal Loss 사용) - Cosine Annealing 스케줄러 포함
-        'CUSTOM_FOCAL_DL': [{
-            'max_batch_size': 512,
-            'num_epochs': 20,
-            'epochs_wo_improve': 5,
+        # CustomFocalDLModel - HPO 적용
+        'CUSTOM_FOCAL_DL': {
+            'max_batch_size': space.Categorical(256, 512, 1024),
+            'num_epochs': space.Categorical(15, 20, 25),
+            'epochs_wo_improve': space.Categorical(5, 10),
             'optimizer': 'adam',
-            'learning_rate': 0.0008,  # Focal Loss에 적합한 LR
-            'weight_decay': 0.0001,
-            'dropout_prob': 0.1,
-            'num_layers': 4,
-            'hidden_size': 128,
-            'activation': 'relu',
+            'learning_rate': space.Real(0.0005, 0.001),
+            'weight_decay': space.Real(1e-5, 1e-3),
+            'dropout_prob': space.Real(0.1, 0.3),
+            'num_layers': space.Categorical(3, 4, 5),
+            'hidden_size': space.Categorical(64, 128, 256),
+            'activation': space.Categorical('relu', 'elu'),
             'lr_scheduler': True,
             'scheduler_type': 'cosine',
             'lr_scheduler_min_lr': 1e-6,
-        }],
-        # RandomForest - 기본 설정
+            # Focal Loss 특화 파라미터
+            'focal_alpha': space.Categorical(0.25, 0.5, 0.75),
+            'focal_gamma': space.Categorical(1.0, 2.0, 3.0),
+        },
+        # RandomForest - HPO 적용
         "RF": {
-            "n_estimators": 100,
-            "max_depth": 10,
-            "min_samples_split": 5,
-            "min_samples_leaf": 2,
-            "criterion": "gini",
+            "n_estimators": space.Int(50, 200),
+            "max_depth": space.Int(5, 15),
+            "min_samples_split": space.Int(2, 10),
+            "min_samples_leaf": space.Int(1, 5),
+            "criterion": space.Categorical("gini", "entropy"),
         },
-        # CustomNNTorchModel (일반 CrossEntropy) - 스케줄러 포함
-        'CUSTOM_NN_TORCH': [{
-            'max_batch_size': 512,
-            'num_epochs': 20,
-            'epochs_wo_improve': 5,
+        # CustomNNTorchModel - HPO 적용
+        'CUSTOM_NN_TORCH': {
+            'max_batch_size': space.Categorical(256, 512, 1024),
+            'num_epochs': space.Categorical(15, 20, 25),
+            'epochs_wo_improve': space.Categorical(5, 10),
             'optimizer': 'adam',
-            'learning_rate': 0.0005,  # 더 안정적인 LR
-            'weight_decay': 0.0001,
-            'dropout_prob': 0.1,
-            'num_layers': 4,
-            'hidden_size': 128,
-            'activation': 'relu',
+            'learning_rate': space.Real(0.0003, 0.0008),
+            'weight_decay': space.Real(1e-5, 1e-3),
+            'dropout_prob': space.Real(0.1, 0.3),
+            'num_layers': space.Categorical(3, 4, 5),
+            'hidden_size': space.Categorical(64, 128, 256),
+            'activation': space.Categorical('relu', 'elu'),
             'lr_scheduler': True,
             'scheduler_type': 'cosine',
             'lr_scheduler_min_lr': 1e-6,
-        }],
+        },
     },
-    time_limit=900,  # 15분
+    hyperparameter_tune_kwargs={
+        'scheduler': 'local',
+        'searcher': 'random',
+        'num_trials': 10,  # 각 모델당 10번의 trial
+    },
+    time_limit=1800,  # 30분
     verbosity=4,  # 최고 verbosity (가장 자세한 로그)
-    # holdout_frac=0.2,  # 검증 데이터를 20%로 늘림
 )
 
-print("\n=== 학습 완료! 결과 확인 ===")
+print("\n=== HPO 학습 완료! 결과 확인 ===")
 print("리더보드 (검증 데이터 기준):")
 print(predictor.leaderboard())
 
@@ -250,4 +258,4 @@ print(f"확률 예측 형태: {probabilities.shape}")
 print(f"예측값 샘플: {predictions.head()}")
 print(f"확률값 샘플:\n{probabilities.head()}")
 
-print("\n=== 5개 모델 학습 완료! ===") 
+print("\n=== sklearn breast_cancer 데이터셋으로 5개 모델 HPO 실험 완료! ===") 
