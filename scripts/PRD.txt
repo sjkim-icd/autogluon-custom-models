@@ -1,0 +1,72 @@
+# AutoGluon Custom Models: Imbalanced Data Performance Enhancement PRD
+
+## 프로젝트 개요
+기존 AutoGluon 커스텀 딥러닝 모델 시스템에서 데이터 증강 없이 모델 아키텍처, 손실 함수, 학습 전략 최적화를 통해 불균형 데이터(신용카드 사기 탐지 등)에서의 성능을 대폭 향상시키는 프로젝트
+
+## 핵심 목표
+- F1 Score: 0.90+ → 0.95+ (15-20% 향상)
+- 안정성: 표준편차 0.1438 → 0.05 이하
+- 사기 탐지 정확도: Precision 0.90+
+- 사기 탐지 완전성: Recall 0.90+
+
+## 주요 개선 영역
+
+### 1. 고급 손실 함수 구현
+- Advanced Focal Loss: gamma, alpha 자동 조정
+- Focal Tversky Loss: 클래스별 가중치 최적화
+- Combo Loss: Focal + Dice Loss 조합
+- Label Smoothing: 과적합 방지
+
+### 2. 모델 아키텍처 최적화
+- Attention Mechanism: 중요 특성에 집중
+- Residual Connections: 그래디언트 플로우 개선
+- Layer Normalization: 학습 안정성 향상
+- Gradient Flow: 역전파 최적화
+
+### 3. 학습 전략 개선
+- Curriculum Learning: 단계별 학습
+- 클래스별 학습률: 불균형 데이터 대응
+- Early Stopping: 과적합 방지
+- 가중치 초기화: Xavier, Kaiming 최적화
+
+## 기술적 구현 방안
+
+### Phase 1: 손실 함수 고도화 (1-2주)
+- Advanced Focal Loss 구현
+- Focal Tversky Loss 구현
+- Combo Loss 구현
+
+### Phase 2: 모델 구조 최적화 (2-3주)
+- Attention Mechanism 추가
+- Residual Connections 최적화
+- Layer Normalization 적용
+
+### Phase 3: 학습 전략 개선 (3-4주)
+- Curriculum Learning 구현
+- 클래스별 학습률 조정
+- Early Stopping 최적화
+
+## 성능 측정 및 검증
+- 평가 지표: F1 Score, Precision/Recall, AUC-ROC, 표준편차
+- 테스트 데이터: Credit Card (신용카드 사기 탐지), Titanic (보조 검증)
+
+## 프로젝트 구조
+- custom_models/: 새로운 손실 함수들과 개선된 모델들
+- experiments/: 성능 테스트 및 손실 함수 비교
+- analysis/: 성능 분석
+- results/: 개선 결과
+
+## 일정 및 마일스톤
+- Week 1-2: 손실 함수 구현
+- Week 3-4: 모델 구조 최적화
+- Week 5-6: 학습 전략 개선
+- Week 7-8: 통합 및 테스트
+
+## 성공 기준
+- F1 Score: 0.95+ 달성
+- 안정성: 표준편차 0.05 이하
+- Precision/Recall: 각각 0.90+ 달성
+- 전체 성능: 기존 대비 15-20% 향상
+
+## 핵심 원칙
+"데이터 증강 없이 모델과 손실 함수 최적화만으로 성능 향상"

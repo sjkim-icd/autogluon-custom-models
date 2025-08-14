@@ -1,0 +1,476 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TITANIC_TEST_002 - Complete IV/WOE Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { margin: 30px 0; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        h1, h2 { color: #333; }
+        .summary { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>TITANIC_TEST_002 - Complete IV/WOE Analysis</h1>
+    
+    <div class="summary">
+        <h2>📊 분석 요약</h2>
+        <p><strong>총 변수 수:</strong> 6개</p>
+        <p><strong>선택된 변수 수:</strong> 5개</p>
+        <p><strong>제거된 변수 수:</strong> 1개</p>
+        <p><strong>IV 임계값:</strong> 0.02</p>
+    </div>
+
+    <div class="chart-container">
+        <h2>📈 Information Value (IV) Comparison</h2>
+        <div id="iv-chart"></div>
+    </div>
+
+        <div class="chart-container">
+            <h2>🥧 IV Distribution (Selected Variables)</h2>
+            <div id="pie-chart"></div>
+        </div>
+    
+            <div class="chart-container">
+                <h2>📊 WOE Values for pclass_binned</h2>
+                <div id="woe-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for fare_binned</h2>
+                <div id="woe-chart-1"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for age_binned</h2>
+                <div id="woe-chart-2"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for parch_binned</h2>
+                <div id="woe-chart-3"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for sibsp_binned</h2>
+                <div id="woe-chart-4"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for body_binned</h2>
+                <div id="woe-chart-5"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for pclass_binned</h2>
+                <div id="iv-contrib-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for fare_binned</h2>
+                <div id="iv-contrib-chart-1"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for age_binned</h2>
+                <div id="iv-contrib-chart-2"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for parch_binned</h2>
+                <div id="iv-contrib-chart-3"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for sibsp_binned</h2>
+                <div id="iv-contrib-chart-4"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for body_binned</h2>
+                <div id="iv-contrib-chart-5"></div>
+            </div>
+        
+    <script>
+        // IV 차트
+        var ivData = [{
+            x: ['pclass_binned', 'fare_binned', 'age_binned', 'parch_binned', 'sibsp_binned', 'body_binned'],
+            y: [0.4196161403305553, 0.4050344997180562, 0.08570150883819067, 0.038141910139639905, 0.02532901475547502, 0.014668746227807406],
+            type: 'bar',
+            marker: {
+                color: ['lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightcoral']
+            },
+            text: ['0.4196', '0.4050', '0.0857', '0.0381', '0.0253', '0.0147'],
+            textposition: 'outside'
+        }];
+        
+        var ivLayout = {
+            title: 'Information Value (IV) Comparison',
+            xaxis: {title: 'Variables'},
+            yaxis: {title: 'IV Value'},
+            height: 500,
+            width: 800,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 5.5,
+                y0: 0.02,
+                y1: 0.02,
+                line: {dash: 'dash', color: 'red', width: 2}
+            }],
+            annotations: [{
+                x: 5,
+                y: 0.02,
+                text: 'Threshold (0.02)',
+                showarrow: false,
+                yshift: 10
+            }]
+        };
+        
+        Plotly.newPlot('iv-chart', ivData, ivLayout);
+
+        // 파이 차트
+        var pieData = [{
+            labels: ['pclass_binned', 'fare_binned', 'age_binned', 'parch_binned', 'sibsp_binned'],
+            values: [0.4196161403305553, 0.4050344997180562, 0.08570150883819067, 0.038141910139639905, 0.02532901475547502],
+            type: 'pie',
+            textinfo: 'label+percent+value'
+        }];
+        
+        var pieLayout = {
+            title: 'IV Distribution (Selected Variables)',
+            height: 500,
+            width: 600
+        };
+        
+        Plotly.newPlot('pie-chart', pieData, pieLayout);
+    
+        // WOE 차트 0 - pclass_binned
+        var woeData0 = [{
+            x: ['Bin1', 'Bin3', 'Bin5'],
+            y: [0.9673238298119193, 0.19771927872086248, -0.5894084338041359],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgreen', 'lightcoral']
+            },
+            text: ['0.9673', '0.1977', '-0.5894'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout0 = {
+            title: 'WOE Values for pclass_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 2.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-0', woeData0, woeLayout0);
+        
+        // WOE 차트 1 - fare_binned
+        var woeData1 = [{
+            x: ['Q5', 'Q4', 'Q1', 'Q3', 'Q2'],
+            y: [0.9612447837355369, 0.29194881899777153, -0.574249298166601, 0.003563264279905046, -0.9001895276811616],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgreen', 'lightcoral', 'lightgreen', 'lightcoral']
+            },
+            text: ['0.9612', '0.2919', '-0.5742', '0.0036', '-0.9002'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout1 = {
+            title: 'WOE Values for fare_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-1', woeData1, woeLayout1);
+        
+        // WOE 차트 2 - age_binned
+        var woeData2 = [{
+            x: ['Bin2', 'Bin1', 'Bin3', 'Bin4', 'Bin5'],
+            y: [-0.16843009687375432, 0.6909113496183691, 0.0664233178658219, 0.2538009764406391, -1.2235572736021252],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightgreen', 'lightgreen', 'lightcoral']
+            },
+            text: ['-0.1684', '0.6909', '0.0664', '0.2538', '-1.2236'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout2 = {
+            title: 'WOE Values for age_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-2', woeData2, woeLayout2);
+        
+        // WOE 차트 3 - parch_binned
+        var woeData3 = [{
+            x: ['Bin1', 'Bin2', 'Bin3', 'Bin4', 'Bin5'],
+            y: [-0.042397056743542015, 0.530787759775672, -1.1282470937978004, 0, 0],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgray', 'lightgray']
+            },
+            text: ['-0.0424', '0.5308', '-1.1282', '0.0000', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout3 = {
+            title: 'WOE Values for parch_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-3', woeData3, woeLayout3);
+        
+        // WOE 차트 4 - sibsp_binned
+        var woeData4 = [{
+            x: ['Bin1', 'Bin2', 'Bin3', 'Bin4', 'Bin5'],
+            y: [0.03422597962138281, 0.08914873086027629, -1.3646358718620308, 0, 0],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgreen', 'lightcoral', 'lightgray', 'lightgray']
+            },
+            text: ['0.0342', '0.0891', '-1.3646', '0.0000', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout4 = {
+            title: 'WOE Values for sibsp_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-4', woeData4, woeLayout4);
+        
+        // WOE 차트 5 - body_binned
+        var woeData5 = [{
+            x: ['Bin3', 'Bin1', 'Bin2', 'Bin4', 'Bin5'],
+            y: [0.12491595471890728, 0, 0, 0, 0],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgray', 'lightgray', 'lightgray', 'lightgray']
+            },
+            text: ['0.1249', '0.0000', '0.0000', '0.0000', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout5 = {
+            title: 'WOE Values for body_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-5', woeData5, woeLayout5);
+        
+        // IV Contribution 차트 0 - pclass_binned
+        var ivContribData0 = [{
+            x: ['Bin1', 'Bin3', 'Bin5'],
+            y: [0.2398580472932893, 0.008442051082294226, 0.17131604195497174],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2399', '0.0084', '0.1713'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout0 = {
+            title: 'IV Contribution for pclass_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-0', ivContribData0, ivContribLayout0);
+        
+        // IV Contribution 차트 1 - fare_binned
+        var ivContribData1 = [{
+            x: ['Q5', 'Q4', 'Q1', 'Q3', 'Q2'],
+            y: [0.1899676341454112, 0.017740672363325646, 0.0632611198407958, 2.484154578326865e-06, 0.13406258921394526],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.1900', '0.0177', '0.0633', '0.0000', '0.1341'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout1 = {
+            title: 'IV Contribution for fare_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-1', ivContribData1, ivContribLayout1);
+        
+        // IV Contribution 차트 2 - age_binned
+        var ivContribData2 = [{
+            x: ['Bin2', 'Bin1', 'Bin3', 'Bin4', 'Bin5'],
+            y: [0.01668478116620848, 0.05101299967293501, 0.0009135053579420688, 0.005347702650688669, 0.01174251999041644],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0167', '0.0510', '0.0009', '0.0053', '0.0117'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout2 = {
+            title: 'IV Contribution for age_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-2', ivContribData2, ivContribLayout2);
+        
+        // IV Contribution 차트 3 - parch_binned
+        var ivContribData3 = [{
+            x: ['Bin1', 'Bin2', 'Bin3', 'Bin4', 'Bin5'],
+            y: [0.0016011308746955468, 0.0271075736500515, 0.009433205614892857, 0, 0],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0016', '0.0271', '0.0094', '0.0000', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout3 = {
+            title: 'IV Contribution for parch_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-3', ivContribData3, ivContribLayout3);
+        
+        // IV Contribution 차트 4 - sibsp_binned
+        var ivContribData4 = [{
+            x: ['Bin1', 'Bin2', 'Bin3', 'Bin4', 'Bin5'],
+            y: [0.0010871084948715086, 0.0003801769115796704, 0.02386172934902384, 0, 0],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0011', '0.0004', '0.0239', '0.0000', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout4 = {
+            title: 'IV Contribution for sibsp_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-4', ivContribData4, ivContribLayout4);
+        
+        // IV Contribution 차트 5 - body_binned
+        var ivContribData5 = [{
+            x: ['Bin3', 'Bin1', 'Bin2', 'Bin4', 'Bin5'],
+            y: [0.014668746227807406, 0, 0, 0, 0],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0147', '0.0000', '0.0000', '0.0000', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout5 = {
+            title: 'IV Contribution for body_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-5', ivContribData5, ivContribLayout5);
+        
+    </script>
+</body>
+</html>

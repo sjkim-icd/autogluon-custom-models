@@ -1,0 +1,732 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CREDITCARD_TEST - Complete IV/WOE Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { margin: 30px 0; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        h1, h2 { color: #333; }
+        .summary { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>CREDITCARD_TEST - Complete IV/WOE Analysis</h1>
+    
+    <div class="summary">
+        <h2>📊 분석 요약</h2>
+        <p><strong>총 변수 수:</strong> 10개</p>
+        <p><strong>선택된 변수 수:</strong> 10개</p>
+        <p><strong>제거된 변수 수:</strong> 0개</p>
+        <p><strong>IV 임계값:</strong> 0.02</p>
+    </div>
+
+    <div class="chart-container">
+        <h2>📈 Information Value (IV) Comparison</h2>
+        <div id="iv-chart"></div>
+    </div>
+
+        <div class="chart-container">
+            <h2>🥧 IV Distribution (Selected Variables)</h2>
+            <div id="pie-chart"></div>
+        </div>
+    
+            <div class="chart-container">
+                <h2>📊 WOE Values for V4_binned</h2>
+                <div id="woe-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V3_binned</h2>
+                <div id="woe-chart-1"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V2_binned</h2>
+                <div id="woe-chart-2"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V7_binned</h2>
+                <div id="woe-chart-3"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V9_binned</h2>
+                <div id="woe-chart-4"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V1_binned</h2>
+                <div id="woe-chart-5"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V6_binned</h2>
+                <div id="woe-chart-6"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V8_binned</h2>
+                <div id="woe-chart-7"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for V5_binned</h2>
+                <div id="woe-chart-8"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for Time_binned</h2>
+                <div id="woe-chart-9"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V4_binned</h2>
+                <div id="iv-contrib-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V3_binned</h2>
+                <div id="iv-contrib-chart-1"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V2_binned</h2>
+                <div id="iv-contrib-chart-2"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V7_binned</h2>
+                <div id="iv-contrib-chart-3"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V9_binned</h2>
+                <div id="iv-contrib-chart-4"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V1_binned</h2>
+                <div id="iv-contrib-chart-5"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V6_binned</h2>
+                <div id="iv-contrib-chart-6"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V8_binned</h2>
+                <div id="iv-contrib-chart-7"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for V5_binned</h2>
+                <div id="iv-contrib-chart-8"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for Time_binned</h2>
+                <div id="iv-contrib-chart-9"></div>
+            </div>
+        
+    <script>
+        // IV 차트
+        var ivData = [{
+            x: ['V4_binned', 'V3_binned', 'V2_binned', 'V7_binned', 'V9_binned', 'V1_binned', 'V6_binned', 'V8_binned', 'V5_binned', 'Time_binned'],
+            y: [2.923021985632974, 2.2002168397155213, 1.7509942484790215, 1.6850031323821537, 1.3753198175077777, 1.1280403506445573, 0.8868034888554789, 0.7917537153424778, 0.7588543160004354, 0.12751968016549856],
+            type: 'bar',
+            marker: {
+                color: ['lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue']
+            },
+            text: ['2.9230', '2.2002', '1.7510', '1.6850', '1.3753', '1.1280', '0.8868', '0.7918', '0.7589', '0.1275'],
+            textposition: 'outside'
+        }];
+        
+        var ivLayout = {
+            title: 'Information Value (IV) Comparison',
+            xaxis: {title: 'Variables'},
+            yaxis: {title: 'IV Value'},
+            height: 500,
+            width: 800,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 9.5,
+                y0: 0.02,
+                y1: 0.02,
+                line: {dash: 'dash', color: 'red', width: 2}
+            }],
+            annotations: [{
+                x: 9,
+                y: 0.02,
+                text: 'Threshold (0.02)',
+                showarrow: false,
+                yshift: 10
+            }]
+        };
+        
+        Plotly.newPlot('iv-chart', ivData, ivLayout);
+
+        // 파이 차트
+        var pieData = [{
+            labels: ['V4_binned', 'V3_binned', 'V2_binned', 'V7_binned', 'V9_binned', 'V1_binned', 'V6_binned', 'V8_binned', 'V5_binned', 'Time_binned'],
+            values: [2.923021985632974, 2.2002168397155213, 1.7509942484790215, 1.6850031323821537, 1.3753198175077777, 1.1280403506445573, 0.8868034888554789, 0.7917537153424778, 0.7588543160004354, 0.12751968016549856],
+            type: 'pie',
+            textinfo: 'label+percent+value'
+        }];
+        
+        var pieLayout = {
+            title: 'IV Distribution (Selected Variables)',
+            height: 500,
+            width: 600
+        };
+        
+        Plotly.newPlot('pie-chart', pieData, pieLayout);
+    
+        // WOE 차트 0 - V4_binned
+        var woeData0 = [{
+            x: ['Q5', 'Q4', 'Q2', 'Q3', 'Q1'],
+            y: [1.5196565669114794, -1.4993340040504213, -2.7988979511832155, -1.882449187333595, -3.8975980246031696],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightcoral', 'lightcoral', 'lightcoral', 'lightcoral']
+            },
+            text: ['1.5197', '-1.4993', '-2.7989', '-1.8824', '-3.8976'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout0 = {
+            title: 'WOE Values for V4_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-0', woeData0, woeLayout0);
+        
+        // WOE 차트 1 - V3_binned
+        var woeData1 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [-2.7989155087500883, -1.882449187333595, -1.7572509227710158, -0.9791950702365838, 1.4496535024161161],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-2.7989', '-1.8824', '-1.7573', '-0.9792', '1.4497'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout1 = {
+            title: 'WOE Values for V3_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-1', woeData1, woeLayout1);
+        
+        // WOE 차트 2 - V2_binned
+        var woeData2 = [{
+            x: ['Q3', 'Q1', 'Q2', 'Q4', 'Q5'],
+            y: [-1.7572509227710158, -1.1244824782226588, -1.882449187333595, -1.0936756880763392, 1.3950640505351029],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-1.7573', '-1.1245', '-1.8824', '-1.0937', '1.3951'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout2 = {
+            title: 'WOE Values for V2_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-2', woeData2, woeLayout2);
+        
+        // WOE 차트 3 - V7_binned
+        var woeData3 = [{
+            x: ['Q4', 'Q3', 'Q5', 'Q1', 'Q2'],
+            y: [-1.189038564637191, -1.6459901648186472, -0.8288250269159387, 1.374461563450786, -2.0255851513493575],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightcoral', 'lightgreen', 'lightcoral']
+            },
+            text: ['-1.1890', '-1.6460', '-0.8288', '1.3745', '-2.0256'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout3 = {
+            title: 'WOE Values for V7_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-3', woeData3, woeLayout3);
+        
+        // WOE 차트 4 - V9_binned
+        var woeData4 = [{
+            x: ['Q4', 'Q3', 'Q1', 'Q5', 'Q2'],
+            y: [-1.4993340040504213, -1.0936756880763392, 1.315545435252265, -1.3714655066140866, -0.7397896929115443],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightcoral', 'lightcoral']
+            },
+            text: ['-1.4993', '-1.0937', '1.3155', '-1.3715', '-0.7398'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout4 = {
+            title: 'WOE Values for V9_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-4', woeData4, woeLayout4);
+        
+        // WOE 차트 5 - V1_binned
+        var woeData5 = [{
+            x: ['Q1', 'Q4', 'Q2', 'Q3', 'Q5'],
+            y: [1.2018566178845882, -0.9791950702365838, -0.8523555243261328, -0.29902091949222065, -1.9514771791956358],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightcoral', 'lightcoral', 'lightcoral', 'lightcoral']
+            },
+            text: ['1.2019', '-0.9792', '-0.8524', '-0.2990', '-1.9515'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout5 = {
+            title: 'WOE Values for V1_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-5', woeData5, woeLayout5);
+        
+        // WOE 차트 6 - V6_binned
+        var woeData6 = [{
+            x: ['Q4', 'Q3', 'Q5', 'Q2', 'Q1'],
+            y: [-1.0638051587240316, -0.76131346834748, -0.718736283713712, -0.718718713190022, 1.1705248995490827],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-1.0638', '-0.7613', '-0.7187', '-0.7187', '1.1705'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout6 = {
+            title: 'WOE Values for V6_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-6', woeData6, woeLayout6);
+        
+        // WOE 차트 7 - V8_binned
+        var woeData7 = [{
+            x: ['Q3', 'Q4', 'Q1', 'Q5', 'Q2'],
+            y: [-1.0936756880763392, -0.76131346834748, 0.1474214710564293, 1.0234956687403138, -1.3322096663004812],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightcoral']
+            },
+            text: ['-1.0937', '-0.7613', '0.1474', '1.0235', '-1.3322'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout7 = {
+            title: 'WOE Values for V8_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-7', woeData7, woeLayout7);
+        
+        // WOE 차트 8 - V5_binned
+        var woeData8 = [{
+            x: ['Q2', 'Q3', 'Q4', 'Q5', 'Q1'],
+            y: [-0.78330994497252, -1.1562311765372393, -0.7833275145700891, -0.19489056888194153, 1.084204723320702],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-0.7833', '-1.1562', '-0.7833', '-0.1949', '1.0842'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout8 = {
+            title: 'WOE Values for V5_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-8', woeData8, woeLayout8);
+        
+        // WOE 차트 9 - Time_binned
+        var woeData9 = [{
+            x: ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'],
+            y: [0.46822551726704525, -0.15847018070409222, 0.19038169792907758, -0.54664001135713, -0.27197466855013697],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightcoral', 'lightgreen', 'lightcoral', 'lightcoral']
+            },
+            text: ['0.4682', '-0.1585', '0.1904', '-0.5466', '-0.2720'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout9 = {
+            title: 'WOE Values for Time_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-9', woeData9, woeLayout9);
+        
+        // IV Contribution 차트 0 - V4_binned
+        var ivContribData0 = [{
+            x: ['Q5', 'Q4', 'Q2', 'Q3', 'Q1'],
+            y: [1.0785923261479942, 0.23322419607807435, 0.5265523691045112, 0.3196476368256023, 0.7650054574767924],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['1.0786', '0.2332', '0.5266', '0.3196', '0.7650'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout0 = {
+            title: 'IV Contribution for V4_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-0', ivContribData0, ivContribLayout0);
+        
+        // IV Contribution 차트 1 - V3_binned
+        var ivContribData1 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [0.526565516599892, 0.3196476368256023, 0.2912327973491577, 0.12241044744013056, 0.9403604415007386],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.5266', '0.3196', '0.2912', '0.1224', '0.9404'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout1 = {
+            title: 'IV Contribution for V3_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-1', ivContribData1, ivContribLayout1);
+        
+        // IV Contribution 차트 2 - V2_binned
+        var ivContribData2 = [{
+            x: ['Q3', 'Q1', 'Q2', 'Q4', 'Q5'],
+            y: [0.2912327973491577, 0.15202441281461293, 0.3196476368256023, 0.14562887723302317, 0.8424605242566254],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2912', '0.1520', '0.3196', '0.1456', '0.8425'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout2 = {
+            title: 'IV Contribution for V2_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-2', ivContribData2, ivContribLayout2);
+        
+        // IV Contribution 차트 3 - V7_binned
+        var ivContribData3 = [{
+            x: ['Q4', 'Q3', 'Q5', 'Q1', 'Q2'],
+            y: [0.16558974537394322, 0.266090728309713, 0.09349029493202754, 0.8076313149758833, 0.35220104879058667],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.1656', '0.2661', '0.0935', '0.8076', '0.3522'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout3 = {
+            title: 'IV Contribution for V7_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-3', ivContribData3, ivContribLayout3);
+        
+        // IV Contribution 차트 4 - V9_binned
+        var ivContribData4 = [{
+            x: ['Q4', 'Q3', 'Q1', 'Q5', 'Q2'],
+            y: [0.23322419607807435, 0.14562887723302317, 0.7140852986916169, 0.20496177115198602, 0.07741967435307731],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2332', '0.1456', '0.7141', '0.2050', '0.0774'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout4 = {
+            title: 'IV Contribution for V9_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-4', ivContribData4, ivContribLayout4);
+        
+        // IV Contribution 차트 5 - V1_binned
+        var ivContribData5 = [{
+            x: ['Q1', 'Q4', 'Q2', 'Q3', 'Q5'],
+            y: [0.556940400271324, 0.12241044744013056, 0.09787693180469614, 0.015463551952751464, 0.33534901917565507],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.5569', '0.1224', '0.0979', '0.0155', '0.3353'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout5 = {
+            title: 'IV Contribution for V1_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-5', ivContribData5, ivContribLayout5);
+        
+        // IV Contribution 차트 6 - V6_binned
+        var ivContribData6 = [{
+            x: ['Q4', 'Q3', 'Q5', 'Q2', 'Q1'],
+            y: [0.1394855062373337, 0.08122222013316134, 0.07375556953845115, 0.07375123858350585, 0.5185889543630269],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.1395', '0.0812', '0.0738', '0.0738', '0.5186'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout6 = {
+            title: 'IV Contribution for V6_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-6', ivContribData6, ivContribLayout6);
+        
+        // IV Contribution 차트 7 - V8_binned
+        var ivContribData7 = [{
+            x: ['Q3', 'Q4', 'Q1', 'Q5', 'Q2'],
+            y: [0.14562887723302317, 0.08122222013316134, 0.004682117044786808, 0.3638425223992173, 0.19637797853228928],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.1456', '0.0812', '0.0047', '0.3638', '0.1964'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout7 = {
+            title: 'IV Contribution for V8_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-7', ivContribData7, ivContribLayout7);
+        
+        // IV Contribution 차트 8 - V5_binned
+        var ivContribData8 = [{
+            x: ['Q2', 'Q3', 'Q4', 'Q5', 'Q1'],
+            y: [0.08516380583388154, 0.15866674156797103, 0.08516847119280577, 0.006904124398216083, 0.422951173007561],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0852', '0.1587', '0.0852', '0.0069', '0.4230'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout8 = {
+            title: 'IV Contribution for V5_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-8', ivContribData8, ivContribLayout8);
+        
+        // IV Contribution 차트 9 - Time_binned
+        var ivContribData9 = [{
+            x: ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'],
+            y: [0.05586384138191106, 0.0046459548856609915, 0.007982649675633278, 0.046068895334424854, 0.01295833888786837],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0559', '0.0046', '0.0080', '0.0461', '0.0130'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout9 = {
+            title: 'IV Contribution for Time_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-9', ivContribData9, ivContribLayout9);
+        
+    </script>
+</body>
+</html>

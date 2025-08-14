@@ -8,6 +8,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.chart import BarChart, LineChart, Reference
+import optuna_dashboard
+import webbrowser
+import time
+import subprocess
+import sys
+import sqlite3
 
 def load_studies_from_unified_db(experiment_name):
     """통합 DB에서 모든 Optuna study 로드"""
@@ -1344,42 +1350,109 @@ def create_unified_db_dashboard_with_fixed_correlation(studies, experiment_name=
     print(f"✅ 상관관계 개선 대시보드가 '{filename}'에 저장되었습니다!")
     return filename
 
+def get_model_types_from_db(db_path):
+    """DB에서 실제 study_name들을 확인합니다."""
+    try:
+        conn = sqlite3.connect(db_path)
+        
+        # 실제 study_name 확인
+        query = "SELECT DISTINCT study_name FROM studies"
+        studies_df = pd.read_sql_query(query, conn)
+        
+        print("🔍 DB에 있는 실제 study_name들:")
+        for study_name in studies_df['study_name']:
+            print(f"   - {study_name}")
+        
+        conn.close()
+        return studies_df['study_name'].tolist()
+        
+    except Exception as e:
+        print(f"❌ DB 읽기 오류: {e}")
+        return []
+
+def run_optuna_dashboard(db_path):
+    """Optuna Dashboard를 터미널 명령어로 실행합니다."""
+    try:
+        # DB 경로
+        # db_path = "optuna_studies/titanic_5models_hpo_v1.db" # 이 부분을 동적으로 변경
+        
+        print("🚀 Optuna Dashboard 시작...")
+        print(f"📊 DB: {db_path}")
+        
+        # optuna-dashboard 명령어 실행
+        cmd = f"optuna-dashboard sqlite:///{db_path}"
+        print(f"💻 실행: {cmd}")
+        
+        subprocess.run(cmd, shell=True, check=True)
+        
+    except subprocess.CalledProcessError:
+        print("⚠️  수동 실행 필요:")
+        print(f"   optuna-dashboard sqlite:///{db_path}")
+    except Exception as e:
+        print(f"❌ 오류: {e}")
+
 if __name__ == "__main__":
     import sys
-    
-    # 실험 이름 설정 (명령행 인수 또는 기본값)
-    experiment_name = sys.argv[1] if len(sys.argv) > 1 else "titanic_5models_hpo"
+    # 명령행 인자 처리
+    if len(sys.argv) > 1:
+        experiment_name = sys.argv[1]
+    else:
+        experiment_name = "titanic_5models_hpo_v1"  # 기본값
     
     print(f"🎯 실험 이름: {experiment_name}")
     
-    # 통합 DB에서 모든 study 로드
-    studies = load_studies_from_unified_db(experiment_name)
+    # 올바른 DB 경로 설정
+    db_path = f"optuna_studies/{experiment_name}/all_studies.db"
+    
+    print(f"🔍 DB 경로: {db_path}")
+    
+    # DB에서 실제 study_name들 읽기
+    actual_study_names = get_model_types_from_db(db_path)
+    
+    if not actual_study_names:
+        print("❌ 사용 가능한 study가 없습니다!")
+        exit() # 프로그램 종료
+    
+    # 각 study별로 로드
+    studies = {}
+    for study_name in actual_study_names:
+        try:
+            study = optuna.load_study(
+                study_name=study_name,  # 실제 study_name 사용
+                storage=f'sqlite:///{db_path}'
+            )
+            studies[study_name] = study
+            print(f"✅ {study_name} study 로드 완료")
+        except Exception as e:
+            print(f"❌ {study_name} study 로드 실패: {e}")
     
     if not studies:
         print("❌ 로드할 study가 없습니다!")
-    else:
-        # 분석 수행
-        importance_results = analyze_parameter_importance(studies)
-        history_results = analyze_optimization_history(studies)
-        
-        # 1. HTML 대시보드 생성 (상관관계 차트 개선)
-        html_file = create_unified_db_dashboard_with_fixed_correlation(studies, experiment_name)
-        
-        # 2. 엑셀 보고서 생성 (기존 고급 서식과 동일)
-        excel_file = create_excel_report_unified_db(studies, importance_results, history_results, experiment_name)
-        
-        print("\n🎉 상관관계 개선 완료!")
-        print("📋 HTML 대시보드 개선사항:")
-        print("  ✅ 파라미터 상관관계: '파라미터1 ↔ 파라미터2' 형식으로 명확한 표시")
-        print("  ✅ 중복 제거: 상삼각 매트릭스만 표시 (A-B와 B-A 중복 제거)")
-        print("  ✅ 강도별 색상: 상관관계 강도에 따른 6단계 색상 구분")
-        print("  ✅ 정렬: 강한 상관관계부터 약한 상관관계 순으로 정렬")
-        print("  ✅ 레이아웃: 충분한 여백과 적절한 폰트 크기로 가독성 향상")
-        print("  ✅ 기존 기능: 모든 차트 + 필터 + 사용자 지정 권장사항 유지")
-        print("\n📊 엑셀 보고서:")
-        print("  ✅ 기존 고급 서식과 동일한 구조 및 조건부 서식")
-        print(f"\n📂 생성된 파일:")
-        print(f"  HTML: {html_file}")
-        print(f"  Excel: {excel_file}")
-        print("🌐 웹 브라우저에서 HTML을 열어서 개선된 상관관계 차트를 확인하세요!")
-        print("📊 캡처하신 문제가 해결되었는지 확인해보세요!") 
+        exit() # 프로그램 종료
+    
+    # 분석 수행
+    importance_results = analyze_parameter_importance(studies)
+    history_results = analyze_optimization_history(studies)
+    
+    # 1. HTML 대시보드 생성 (상관관계 차트 개선)
+    html_file = create_unified_db_dashboard_with_fixed_correlation(studies, experiment_name)
+    
+    # 2. 엑셀 보고서 생성 (기존 고급 서식과 동일)
+    excel_file = create_excel_report_unified_db(studies, importance_results, history_results, experiment_name)
+    
+    run_optuna_dashboard(db_path)
+    print("\n🎉 상관관계 개선 완료!")
+    print("📋 HTML 대시보드 개선사항:")
+    print("  ✅ 파라미터 상관관계: '파라미터1 ↔ 파라미터2' 형식으로 명확한 표시")
+    print("  ✅ 중복 제거: 상삼각 매트릭스만 표시 (A-B와 B-A 중복 제거)")
+    print("  ✅ 강도별 색상: 상관관계 강도에 따른 6단계 색상 구분")
+    print("  ✅ 정렬: 강한 상관관계부터 약한 상관관계 순으로 정렬")
+    print("  ✅ 레이아웃: 충분한 여백과 적절한 폰트 크기로 가독성 향상")
+    print("  ✅ 기존 기능: 모든 차트 + 필터 + 사용자 지정 권장사항 유지")
+    print("\n📊 엑셀 보고서:")
+    print("  ✅ 기존 고급 서식과 동일한 구조 및 조건부 서식")
+    print(f"\n📂 생성된 파일:")
+    print(f"  HTML: {html_file}")
+    print(f"  Excel: {excel_file}")
+    print("🌐 웹 브라우저에서 HTML을 열어서 개선된 상관관계 차트를 확인하세요!")
+    print("📊 캡처하신 문제가 해결되었는지 확인해보세요!") 

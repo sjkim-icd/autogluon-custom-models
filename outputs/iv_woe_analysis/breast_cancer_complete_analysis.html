@@ -1,0 +1,2012 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BREAST_CANCER - Complete IV/WOE Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { margin: 30px 0; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        h1, h2 { color: #333; }
+        .summary { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>BREAST_CANCER - Complete IV/WOE Analysis</h1>
+    
+    <div class="summary">
+        <h2>📊 분석 요약</h2>
+        <p><strong>총 변수 수:</strong> 30개</p>
+        <p><strong>선택된 변수 수:</strong> 30개</p>
+        <p><strong>제거된 변수 수:</strong> 0개</p>
+        <p><strong>IV 임계값:</strong> 0.02</p>
+    </div>
+
+    <div class="chart-container">
+        <h2>📈 Information Value (IV) Comparison</h2>
+        <div id="iv-chart"></div>
+    </div>
+
+        <div class="chart-container">
+            <h2>🥧 IV Distribution (Selected Variables)</h2>
+            <div id="pie-chart"></div>
+        </div>
+    
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean perimeter_binned</h2>
+                <div id="woe-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean radius_binned</h2>
+                <div id="woe-chart-1"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean area_binned</h2>
+                <div id="woe-chart-2"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for area error_binned</h2>
+                <div id="woe-chart-3"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean concave points_binned</h2>
+                <div id="woe-chart-4"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean concavity_binned</h2>
+                <div id="woe-chart-5"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst concavity_binned</h2>
+                <div id="woe-chart-6"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst concave points_binned</h2>
+                <div id="woe-chart-7"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for radius error_binned</h2>
+                <div id="woe-chart-8"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for perimeter error_binned</h2>
+                <div id="woe-chart-9"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst compactness_binned</h2>
+                <div id="woe-chart-10"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean compactness_binned</h2>
+                <div id="woe-chart-11"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst perimeter_binned</h2>
+                <div id="woe-chart-12"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for concavity error_binned</h2>
+                <div id="woe-chart-13"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst radius_binned</h2>
+                <div id="woe-chart-14"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst area_binned</h2>
+                <div id="woe-chart-15"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for concave points error_binned</h2>
+                <div id="woe-chart-16"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst texture_binned</h2>
+                <div id="woe-chart-17"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean texture_binned</h2>
+                <div id="woe-chart-18"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst smoothness_binned</h2>
+                <div id="woe-chart-19"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst symmetry_binned</h2>
+                <div id="woe-chart-20"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for compactness error_binned</h2>
+                <div id="woe-chart-21"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean smoothness_binned</h2>
+                <div id="woe-chart-22"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for worst fractal dimension_binned</h2>
+                <div id="woe-chart-23"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean symmetry_binned</h2>
+                <div id="woe-chart-24"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for fractal dimension error_binned</h2>
+                <div id="woe-chart-25"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for mean fractal dimension_binned</h2>
+                <div id="woe-chart-26"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for texture error_binned</h2>
+                <div id="woe-chart-27"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for symmetry error_binned</h2>
+                <div id="woe-chart-28"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📊 WOE Values for smoothness error_binned</h2>
+                <div id="woe-chart-29"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean perimeter_binned</h2>
+                <div id="iv-contrib-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean radius_binned</h2>
+                <div id="iv-contrib-chart-1"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean area_binned</h2>
+                <div id="iv-contrib-chart-2"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for area error_binned</h2>
+                <div id="iv-contrib-chart-3"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean concave points_binned</h2>
+                <div id="iv-contrib-chart-4"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean concavity_binned</h2>
+                <div id="iv-contrib-chart-5"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst concavity_binned</h2>
+                <div id="iv-contrib-chart-6"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst concave points_binned</h2>
+                <div id="iv-contrib-chart-7"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for radius error_binned</h2>
+                <div id="iv-contrib-chart-8"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for perimeter error_binned</h2>
+                <div id="iv-contrib-chart-9"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst compactness_binned</h2>
+                <div id="iv-contrib-chart-10"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean compactness_binned</h2>
+                <div id="iv-contrib-chart-11"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst perimeter_binned</h2>
+                <div id="iv-contrib-chart-12"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for concavity error_binned</h2>
+                <div id="iv-contrib-chart-13"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst radius_binned</h2>
+                <div id="iv-contrib-chart-14"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst area_binned</h2>
+                <div id="iv-contrib-chart-15"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for concave points error_binned</h2>
+                <div id="iv-contrib-chart-16"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst texture_binned</h2>
+                <div id="iv-contrib-chart-17"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean texture_binned</h2>
+                <div id="iv-contrib-chart-18"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst smoothness_binned</h2>
+                <div id="iv-contrib-chart-19"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst symmetry_binned</h2>
+                <div id="iv-contrib-chart-20"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for compactness error_binned</h2>
+                <div id="iv-contrib-chart-21"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean smoothness_binned</h2>
+                <div id="iv-contrib-chart-22"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for worst fractal dimension_binned</h2>
+                <div id="iv-contrib-chart-23"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean symmetry_binned</h2>
+                <div id="iv-contrib-chart-24"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for fractal dimension error_binned</h2>
+                <div id="iv-contrib-chart-25"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for mean fractal dimension_binned</h2>
+                <div id="iv-contrib-chart-26"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for texture error_binned</h2>
+                <div id="iv-contrib-chart-27"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for symmetry error_binned</h2>
+                <div id="iv-contrib-chart-28"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for smoothness error_binned</h2>
+                <div id="iv-contrib-chart-29"></div>
+            </div>
+        
+    <script>
+        // IV 차트
+        var ivData = [{
+            x: ['mean perimeter_binned', 'mean radius_binned', 'mean area_binned', 'area error_binned', 'mean concave points_binned', 'mean concavity_binned', 'worst concavity_binned', 'worst concave points_binned', 'radius error_binned', 'perimeter error_binned', 'worst compactness_binned', 'mean compactness_binned', 'worst perimeter_binned', 'concavity error_binned', 'worst radius_binned', 'worst area_binned', 'concave points error_binned', 'worst texture_binned', 'mean texture_binned', 'worst smoothness_binned', 'worst symmetry_binned', 'compactness error_binned', 'mean smoothness_binned', 'worst fractal dimension_binned', 'mean symmetry_binned', 'fractal dimension error_binned', 'mean fractal dimension_binned', 'texture error_binned', 'symmetry error_binned', 'smoothness error_binned'],
+            y: [5.070780940964377, 4.681100818918306, 4.6320671327098095, 4.577879363160742, 4.304950378507314, 4.090740653500827, 3.3643758704839057, 2.814905509121507, 2.509180719597045, 2.3378030759599193, 2.2118744279406712, 2.0712693051679003, 1.7638726247656487, 1.4549325019736339, 1.3617532477908392, 1.352971570411028, 1.2292020699820392, 1.1744792584918478, 1.1608517812597132, 0.9192943060239767, 0.7593726339769438, 0.7194673665727463, 0.6347669728575726, 0.5149798006367658, 0.49836592182615047, 0.201498790311268, 0.19155103442726024, 0.07871819450267499, 0.056770043029577444, 0.042075422925196684],
+            type: 'bar',
+            marker: {
+                color: ['lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue', 'lightblue']
+            },
+            text: ['5.0708', '4.6811', '4.6321', '4.5779', '4.3050', '4.0907', '3.3644', '2.8149', '2.5092', '2.3378', '2.2119', '2.0713', '1.7639', '1.4549', '1.3618', '1.3530', '1.2292', '1.1745', '1.1609', '0.9193', '0.7594', '0.7195', '0.6348', '0.5150', '0.4984', '0.2015', '0.1916', '0.0787', '0.0568', '0.0421'],
+            textposition: 'outside'
+        }];
+        
+        var ivLayout = {
+            title: 'Information Value (IV) Comparison',
+            xaxis: {title: 'Variables'},
+            yaxis: {title: 'IV Value'},
+            height: 500,
+            width: 800,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 29.5,
+                y0: 0.02,
+                y1: 0.02,
+                line: {dash: 'dash', color: 'red', width: 2}
+            }],
+            annotations: [{
+                x: 29,
+                y: 0.02,
+                text: 'Threshold (0.02)',
+                showarrow: false,
+                yshift: 10
+            }]
+        };
+        
+        Plotly.newPlot('iv-chart', ivData, ivLayout);
+
+        // 파이 차트
+        var pieData = [{
+            labels: ['mean perimeter_binned', 'mean radius_binned', 'mean area_binned', 'area error_binned', 'mean concave points_binned', 'mean concavity_binned', 'worst concavity_binned', 'worst concave points_binned', 'radius error_binned', 'perimeter error_binned', 'worst compactness_binned', 'mean compactness_binned', 'worst perimeter_binned', 'concavity error_binned', 'worst radius_binned', 'worst area_binned', 'concave points error_binned', 'worst texture_binned', 'mean texture_binned', 'worst smoothness_binned', 'worst symmetry_binned', 'compactness error_binned', 'mean smoothness_binned', 'worst fractal dimension_binned', 'mean symmetry_binned', 'fractal dimension error_binned', 'mean fractal dimension_binned', 'texture error_binned', 'symmetry error_binned', 'smoothness error_binned'],
+            values: [5.070780940964377, 4.681100818918306, 4.6320671327098095, 4.577879363160742, 4.304950378507314, 4.090740653500827, 3.3643758704839057, 2.814905509121507, 2.509180719597045, 2.3378030759599193, 2.2118744279406712, 2.0712693051679003, 1.7638726247656487, 1.4549325019736339, 1.3617532477908392, 1.352971570411028, 1.2292020699820392, 1.1744792584918478, 1.1608517812597132, 0.9192943060239767, 0.7593726339769438, 0.7194673665727463, 0.6347669728575726, 0.5149798006367658, 0.49836592182615047, 0.201498790311268, 0.19155103442726024, 0.07871819450267499, 0.056770043029577444, 0.042075422925196684],
+            type: 'pie',
+            textinfo: 'label+percent+value'
+        }];
+        
+        var pieLayout = {
+            title: 'IV Distribution (Selected Variables)',
+            height: 500,
+            width: 600
+        };
+        
+        Plotly.newPlot('pie-chart', pieData, pieLayout);
+    
+        // WOE 차트 0 - mean perimeter_binned
+        var woeData0 = [{
+            x: ['Q5', 'Q2', 'Q3', 'Q4', 'Q1'],
+            y: [-5.248537325819967, 2.2057691782989663, 1.0157177124916383, -1.0226292684553795, 4.206238311604714],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightgreen', 'lightcoral', 'lightgreen']
+            },
+            text: ['-5.2485', '2.2058', '1.0157', '-1.0226', '4.2062'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout0 = {
+            title: 'WOE Values for mean perimeter_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-0', woeData0, woeLayout0);
+        
+        // WOE 차트 1 - mean radius_binned
+        var woeData1 = [{
+            x: ['Q5', 'Q2', 'Q3', 'Q4', 'Q1'],
+            y: [-5.248537325819967, 2.0628480453246048, 0.8986675460509075, -0.8756945247885339, 3.504202183627523],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightgreen', 'lightcoral', 'lightgreen']
+            },
+            text: ['-5.2485', '2.0628', '0.8987', '-0.8757', '3.5042'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout1 = {
+            title: 'WOE Values for mean radius_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-1', woeData1, woeLayout1);
+        
+        // WOE 차트 2 - mean area_binned
+        var woeData2 = [{
+            x: ['Q5', 'Q1', 'Q2', 'Q3', 'Q4'],
+            y: [-5.248537325819967, 3.089768405536598, 2.369222250788538, 0.8431659472934887, -0.8756945247885339],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightgreen', 'lightgreen', 'lightcoral']
+            },
+            text: ['-5.2485', '3.0898', '2.3692', '0.8432', '-0.8757'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout2 = {
+            title: 'WOE Values for mean area_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-2', woeData2, woeLayout2);
+        
+        // WOE 차트 3 - area error_binned
+        var woeData3 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [-5.248537325819967, 1.0157177124916383, -0.8396032382261612, 1.7059280333782738, 3.5130911310447686],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-5.2485', '1.0157', '-0.8396', '1.7059', '3.5131'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout3 = {
+            title: 'WOE Values for area error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-3', woeData3, woeLayout3);
+        
+        // WOE 차트 4 - mean concave points_binned
+        var woeData4 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [-5.248537325819967, -1.419091100313585, 1.4349130134117047, 2.793036497564899, 0],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgray']
+            },
+            text: ['-5.2485', '-1.4191', '1.4349', '2.7930', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout4 = {
+            title: 'WOE Values for mean concave points_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-4', woeData4, woeLayout4);
+        
+        // WOE 차트 5 - mean concavity_binned
+        var woeData5 = [{
+            x: ['Q5', 'Q4', 'Q2', 'Q3', 'Q1'],
+            y: [-3.2480681925142196, -1.3352492980852344, 2.369222250788538, 1.077706295995937, 4.206238311604714],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgreen']
+            },
+            text: ['-3.2481', '-1.3352', '2.3692', '1.0777', '4.2062'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout5 = {
+            title: 'WOE Values for mean concavity_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-5', woeData5, woeLayout5);
+        
+        // WOE 차트 6 - worst concavity_binned
+        var woeData6 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [-2.4872623634804594, 0.3767920860983319, -1.1616529541821499, 3.089768405536598, 3.504202183627523],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-2.4873', '0.3768', '-1.1617', '3.0898', '3.5042'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout6 = {
+            title: 'WOE Values for worst concavity_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-6', woeData6, woeLayout6);
+        
+        // WOE 차트 7 - worst concave points_binned
+        var woeData7 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [0, -1.3096068674718968, 1.2306046275067295, 3.089768405536598, 4.206238311604714],
+            type: 'bar',
+            marker: {
+                color: ['lightgray', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgreen']
+            },
+            text: ['0.0000', '-1.3096', '1.2306', '3.0898', '4.2062'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout7 = {
+            title: 'WOE Values for worst concave points_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-7', woeData7, woeLayout7);
+        
+        // WOE 차트 8 - radius error_binned
+        var woeData8 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q1', 'Q2'],
+            y: [-3.105147059539858, -0.5913537657808751, 0.7894330322765677, 2.2057691782989663, 1.291229249323164],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgreen']
+            },
+            text: ['-3.1051', '-0.5914', '0.7894', '2.2058', '1.2912'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout8 = {
+            title: 'WOE Values for radius error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-8', woeData8, woeLayout8);
+        
+        // WOE 차트 9 - perimeter error_binned
+        var woeData9 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [-2.5713206664873494, -0.6970401735712908, 0.5892972392074859, 1.22034812733954, 2.793036497564899],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgreen']
+            },
+            text: ['-2.5713', '-0.6970', '0.5893', '1.2203', '2.7930'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout9 = {
+            title: 'WOE Values for perimeter error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-9', woeData9, woeLayout9);
+        
+        // WOE 차트 10 - worst compactness_binned
+        var woeData10 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [-2.4872623634804594, 0.2391369762899473, -0.5562408269188968, 1.529021652272096, 2.5607604626874165],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-2.4873', '0.2391', '-0.5562', '1.5290', '2.5608'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout10 = {
+            title: 'WOE Values for worst compactness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-10', woeData10, woeLayout10);
+        
+        // WOE 차트 11 - mean compactness_binned
+        var woeData11 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [-2.2626471415547935, 1.529021652272096, -0.7680095850391524, 0.4075637447650856, 2.369222250788538],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-2.2626', '1.5290', '-0.7680', '0.4076', '2.3692'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout11 = {
+            title: 'WOE Values for mean compactness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-11', woeData11, woeLayout11);
+        
+        // WOE 차트 12 - worst perimeter_binned
+        var woeData12 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q1', 'Q2'],
+            y: [0, 1.3557677704607354, -1.4313611929053995, 0, 3.504202183627523],
+            type: 'bar',
+            marker: {
+                color: ['lightgray', 'lightgreen', 'lightcoral', 'lightgray', 'lightgreen']
+            },
+            text: ['0.0000', '1.3558', '-1.4314', '0.0000', '3.5042'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout12 = {
+            title: 'WOE Values for worst perimeter_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-12', woeData12, woeLayout12);
+        
+        // WOE 차트 13 - concavity error_binned
+        var woeData13 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [-1.0226292684553795, 1.22034812733954, -0.8756945247885339, -0.3970968584376477, 2.793036497564899],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-1.0226', '1.2203', '-0.8757', '-0.3971', '2.7930'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout13 = {
+            title: 'WOE Values for concavity error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-13', woeData13, woeLayout13);
+        
+        // WOE 차트 14 - worst radius_binned
+        var woeData14 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q1', 'Q2'],
+            y: [0, 1.2099853403039935, -1.254037016317086, 0, 2.793036497564899],
+            type: 'bar',
+            marker: {
+                color: ['lightgray', 'lightgreen', 'lightcoral', 'lightgray', 'lightgreen']
+            },
+            text: ['0.0000', '1.2100', '-1.2540', '0.0000', '2.7930'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout14 = {
+            title: 'WOE Values for worst radius_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-14', woeData14, woeLayout14);
+        
+        // WOE 차트 15 - worst area_binned
+        var woeData15 = [{
+            x: ['Q5', 'Q2', 'Q3', 'Q4', 'Q1'],
+            y: [0, 2.5607604626874165, 1.3557677704607354, -1.307078421118538, 0],
+            type: 'bar',
+            marker: {
+                color: ['lightgray', 'lightgreen', 'lightgreen', 'lightcoral', 'lightgray']
+            },
+            text: ['0.0000', '2.5608', '1.3558', '-1.3071', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout15 = {
+            title: 'WOE Values for worst area_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-15', woeData15, woeLayout15);
+        
+        // WOE 차트 16 - concave points error_binned
+        var woeData16 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [-1.254037016317086, -0.8243357660953728, -0.019669745759873746, 1.0264130016083863, 2.2057691782989663],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-1.2540', '-0.8243', '-0.0197', '1.0264', '2.2058'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout16 = {
+            title: 'WOE Values for concave points error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-16', woeData16, woeLayout16);
+        
+        // WOE 차트 17 - worst texture_binned
+        var woeData17 = [{
+            x: ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'],
+            y: [2.0628480453246048, 1.152826926464045, -0.14509828420575557, -0.803716478892637, -1.1750759745142905],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgreen', 'lightcoral', 'lightcoral', 'lightcoral']
+            },
+            text: ['2.0628', '1.1528', '-0.1451', '-0.8037', '-1.1751'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout17 = {
+            title: 'WOE Values for worst texture_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-17', woeData17, woeLayout17);
+        
+        // WOE 차트 18 - mean texture_binned
+        var woeData18 = [{
+            x: ['Q1', 'Q2', 'Q4', 'Q5', 'Q3'],
+            y: [2.0628480453246048, 0.8542157834800737, -0.9996397502306807, -1.1616529541821499, 0.2391369762899473],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgreen', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['2.0628', '0.8542', '-0.9996', '-1.1617', '0.2391'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout18 = {
+            title: 'WOE Values for mean texture_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-18', woeData18, woeLayout18);
+        
+        // WOE 차트 19 - worst smoothness_binned
+        var woeData19 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [-1.376815617165347, 0.4198338373568999, -0.5913537657808751, 0.5423714617492129, 1.6189166563886441],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-1.3768', '0.4198', '-0.5914', '0.5424', '1.6189'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout19 = {
+            title: 'WOE Values for worst smoothness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-19', woeData19, woeLayout19);
+        
+        // WOE 차트 20 - worst symmetry_binned
+        var woeData20 = [{
+            x: ['Q5', 'Q3', 'Q1', 'Q4', 'Q2'],
+            y: [-1.4621328515721532, 0.1453294263701574, 1.22034812733954, -0.20269577598909203, 0.6603504413662509],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightgreen', 'lightcoral', 'lightgreen']
+            },
+            text: ['-1.4621', '0.1453', '1.2203', '-0.2027', '0.6604'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout20 = {
+            title: 'WOE Values for worst symmetry_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-20', woeData20, woeLayout20);
+        
+        // WOE 차트 21 - compactness error_binned
+        var woeData21 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q1', 'Q3'],
+            y: [-0.8756945247885339, 0.8431659472934887, -0.8396032382261612, 1.3759704777782547, 0.041944545204120845],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-0.8757', '0.8432', '-0.8396', '1.3760', '0.0419'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout21 = {
+            title: 'WOE Values for compactness error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-21', woeData21, woeLayout21);
+        
+        // WOE 차트 22 - mean smoothness_binned
+        var woeData22 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [-1.0175863934215177, 0.5084699100735317, -0.40134830729500603, -0.1083042917018398, 1.529021652272096],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-1.0176', '0.5085', '-0.4013', '-0.1083', '1.5290'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout22 = {
+            title: 'WOE Values for mean smoothness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-22', woeData22, woeLayout22);
+        
+        // WOE 차트 23 - worst fractal dimension_binned
+        var woeData23 = [{
+            x: ['Q5', 'Q4', 'Q2', 'Q1', 'Q3'],
+            y: [-1.2943393953411082, -0.13028319842061503, 0.648921745542628, 0.6009932789706772, 0.36436956609977483],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgreen']
+            },
+            text: ['-1.2943', '-0.1303', '0.6489', '0.6010', '0.3644'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout23 = {
+            title: 'WOE Values for worst fractal dimension_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-23', woeData23, woeLayout23);
+        
+        // WOE 차트 24 - mean symmetry_binned
+        var woeData24 = [{
+            x: ['Q5', 'Q3', 'Q1', 'Q4', 'Q2'],
+            y: [-0.9854551152387244, -0.19690983892204814, 0.9669275483222063, -0.27428942917610083, 0.8116561690612778],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightcoral', 'lightgreen']
+            },
+            text: ['-0.9855', '-0.1969', '0.9669', '-0.2743', '0.8117'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout24 = {
+            title: 'WOE Values for mean symmetry_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-24', woeData24, woeLayout24);
+        
+        // WOE 차트 25 - fractal dimension error_binned
+        var woeData25 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [-0.41578899144980025, 0.003860751650320383, -0.5211495071076266, 0.4198338373568999, 0.648921745542628],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightgreen', 'lightgreen']
+            },
+            text: ['-0.4158', '0.0039', '-0.5211', '0.4198', '0.6489'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout25 = {
+            title: 'WOE Values for fractal dimension error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-25', woeData25, woeLayout25);
+        
+        // WOE 차트 26 - mean fractal dimension_binned
+        var woeData26 = [{
+            x: ['Q5', 'Q1', 'Q2', 'Q3', 'Q4'],
+            y: [-0.27428942917610083, -0.5913537657808751, 0.648921745542628, -0.033854380751830074, 0.3767920860983319],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightcoral', 'lightgreen']
+            },
+            text: ['-0.2743', '-0.5914', '0.6489', '-0.0339', '0.3768'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout26 = {
+            title: 'WOE Values for mean fractal dimension_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-26', woeData26, woeLayout26);
+        
+        // WOE 차트 27 - texture error_binned
+        var woeData27 = [{
+            x: ['Q2', 'Q1', 'Q3', 'Q4', 'Q5'],
+            y: [-0.3098404134404197, 0.46370389620382507, -0.1816423667912596, -0.13028319842061503, 0.2117380021018329],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightgreen', 'lightcoral', 'lightcoral', 'lightgreen']
+            },
+            text: ['-0.3098', '0.4637', '-0.1816', '-0.1303', '0.2117'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout27 = {
+            title: 'WOE Values for texture error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-27', woeData27, woeLayout27);
+        
+        // WOE 차트 28 - symmetry error_binned
+        var woeData28 = [{
+            x: ['Q5', 'Q1', 'Q4', 'Q3', 'Q2'],
+            y: [0.2520403811258552, -0.3135101423293822, 0.05573786733645663, 0.26730785325664375, -0.21796324811988055],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightcoral', 'lightgreen', 'lightgreen', 'lightcoral']
+            },
+            text: ['0.2520', '-0.3135', '0.0557', '0.2673', '-0.2180'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout28 = {
+            title: 'WOE Values for symmetry error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-28', woeData28, woeLayout28);
+        
+        // WOE 차트 29 - smoothness error_binned
+        var woeData29 = [{
+            x: ['Q3', 'Q2', 'Q5', 'Q4', 'Q1'],
+            y: [-0.1816423667912596, -0.20269577598909203, 0.3767920860983319, 0.01784699362506035, 0.01784699362506035],
+            type: 'bar',
+            marker: {
+                color: ['lightcoral', 'lightcoral', 'lightgreen', 'lightgreen', 'lightgreen']
+            },
+            text: ['-0.1816', '-0.2027', '0.3768', '0.0178', '0.0178'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout29 = {
+            title: 'WOE Values for smoothness error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 4.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-29', woeData29, woeLayout29);
+        
+        // IV Contribution 차트 0 - mean perimeter_binned
+        var ivContribData0 = [{
+            x: ['Q5', 'Q2', 'Q3', 'Q4', 'Q1'],
+            y: [2.782867638441804, 0.5882808898045113, 0.16877630611879452, 0.219310497017854, 1.3115456095814129],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['2.7829', '0.5883', '0.1688', '0.2193', '1.3115'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout0 = {
+            title: 'IV Contribution for mean perimeter_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-0', ivContribData0, ivContribLayout0);
+        
+        // IV Contribution 차트 1 - mean radius_binned
+        var ivContribData1 = [{
+            x: ['Q5', 'Q2', 'Q3', 'Q4', 'Q1'],
+            y: [2.782867638441804, 0.5346549767069321, 0.13581416668952853, 0.16146500044162557, 1.0662990366384157],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['2.7829', '0.5347', '0.1358', '0.1615', '1.0663'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout1 = {
+            title: 'IV Contribution for mean radius_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-1', ivContribData1, ivContribLayout1);
+        
+        // IV Contribution 차트 2 - mean area_binned
+        var ivContribData2 = [{
+            x: ['Q5', 'Q1', 'Q2', 'Q3', 'Q4'],
+            y: [2.782867638441804, 0.9169611563442409, 0.6496860445122525, 0.121087292969887, 0.16146500044162557],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['2.7829', '0.9170', '0.6497', '0.1211', '0.1615'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout2 = {
+            title: 'IV Contribution for mean area_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-2', ivContribData2, ivContribLayout2);
+        
+        // IV Contribution 차트 3 - area error_binned
+        var ivContribData3 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [2.782867638441804, 0.16877630611879452, 0.14849808343765386, 0.3988928757292864, 1.0788444594332027],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['2.7829', '0.1688', '0.1485', '0.3989', '1.0788'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout3 = {
+            title: 'IV Contribution for area error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-3', ivContribData3, ivContribLayout3);
+        
+        // IV Contribution 차트 4 - mean concave points_binned
+        var ivContribData4 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [2.782867638441804, 0.4110234132706266, 0.3031586475933244, 0.8079006792015587, 0],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['2.7829', '0.4110', '0.3032', '0.8079', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout4 = {
+            title: 'IV Contribution for mean concave points_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-4', ivContribData4, ivContribLayout4);
+        
+        // IV Contribution 차트 5 - mean concavity_binned
+        var ivContribData5 = [{
+            x: ['Q5', 'Q4', 'Q2', 'Q3', 'Q1'],
+            y: [1.5756675610189683, 0.3666625199791954, 0.6496860445122525, 0.18717891840899784, 1.3115456095814129],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['1.5757', '0.3667', '0.6497', '0.1872', '1.3115'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout5 = {
+            title: 'IV Contribution for mean concavity_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-5', ivContribData5, ivContribLayout5);
+        
+        // IV Contribution 차트 6 - worst concavity_binned
+        var ivContribData6 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [1.0756972633772317, 0.02683904307589593, 0.27857937104812136, 0.9169611563442409, 1.0662990366384157],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['1.0757', '0.0268', '0.2786', '0.9170', '1.0663'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout6 = {
+            title: 'IV Contribution for worst concavity_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-6', ivContribData6, ivContribLayout6);
+        
+        // IV Contribution 차트 7 - worst concave points_binned
+        var ivContribData7 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [0, 0.3472662679469042, 0.23913247524894923, 0.9169611563442409, 1.3115456095814129],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0000', '0.3473', '0.2391', '0.9170', '1.3115'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout7 = {
+            title: 'IV Contribution for worst concave points_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-7', ivContribData7, ivContribLayout7);
+        
+        // IV Contribution 차트 8 - radius error_binned
+        var ivContribData8 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q1', 'Q2'],
+            y: [1.4829904023852825, 0.07346994687962538, 0.10743565657799069, 0.5882808898045113, 0.2570038239496346],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['1.4830', '0.0735', '0.1074', '0.5883', '0.2570'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout8 = {
+            title: 'IV Contribution for radius error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-8', ivContribData8, ivContribLayout8);
+        
+        // IV Contribution 차트 9 - perimeter error_binned
+        var ivContribData9 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [1.1313824522315843, 0.10232171037969769, 0.06247715563924827, 0.23372107850783036, 0.8079006792015587],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['1.1314', '0.1023', '0.0625', '0.2337', '0.8079'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout9 = {
+            title: 'IV Contribution for perimeter error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-9', ivContribData9, ivContribLayout9);
+        
+        // IV Contribution 차트 10 - worst compactness_binned
+        var ivContribData10 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [1.0756972633772317, 0.01097039772843266, 0.0649256311109552, 0.33881959370878023, 0.7214615420152712],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['1.0757', '0.0110', '0.0649', '0.3388', '0.7215'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout10 = {
+            title: 'IV Contribution for worst compactness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-10', ivContribData10, ivContribLayout10);
+        
+        // IV Contribution 차트 11 - mean compactness_binned
+        var ivContribData11 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [0.927522693921271, 0.33881959370878023, 0.12428758254795648, 0.030953390477640084, 0.6496860445122525],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.9275', '0.3388', '0.1243', '0.0310', '0.6497'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout11 = {
+            title: 'IV Contribution for mean compactness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-11', ivContribData11, ivContribLayout11);
+        
+        // IV Contribution 차트 12 - worst perimeter_binned
+        var ivContribData12 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q1', 'Q2'],
+            y: [0, 0.276244579941269, 0.4213290081859639, 0, 1.0662990366384157],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0000', '0.2762', '0.4213', '0.0000', '1.0663'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout12 = {
+            title: 'IV Contribution for worst perimeter_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-12', ivContribData12, ivContribLayout12);
+        
+        // IV Contribution 차트 13 - concavity error_binned
+        var ivContribData13 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [0.219310497017854, 0.23372107850783036, 0.16146500044162557, 0.032535246804765244, 0.8079006792015587],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2193', '0.2337', '0.1615', '0.0325', '0.8079'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout13 = {
+            title: 'IV Contribution for concavity error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-13', ivContribData13, ivContribLayout13);
+        
+        // IV Contribution 차트 14 - worst radius_binned
+        var ivContribData14 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q1', 'Q2'],
+            y: [0, 0.22834708281224486, 0.3255054857770354, 0, 0.8079006792015587],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0000', '0.2283', '0.3255', '0.0000', '0.8079'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout14 = {
+            title: 'IV Contribution for worst radius_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-14', ivContribData14, ivContribLayout14);
+        
+        // IV Contribution 차트 15 - worst area_binned
+        var ivContribData15 = [{
+            x: ['Q5', 'Q2', 'Q3', 'Q4', 'Q1'],
+            y: [0, 0.7214615420152712, 0.276244579941269, 0.35526544845448765, 0],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0000', '0.7215', '0.2762', '0.3553', '0.0000'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout15 = {
+            title: 'IV Contribution for worst area_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-15', ivContribData15, ivContribLayout15);
+        
+        // IV Contribution 차트 16 - concave points error_binned
+        var ivContribData16 = [{
+            x: ['Q5', 'Q4', 'Q3', 'Q2', 'Q1'],
+            y: [0.3255054857770354, 0.1419093955982323, 7.7708022596616e-05, 0.1734285907796634, 0.5882808898045113],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.3255', '0.1419', '0.0001', '0.1734', '0.5883'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout16 = {
+            title: 'IV Contribution for concave points error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-16', ivContribData16, ivContribLayout16);
+        
+        // IV Contribution 차트 17 - worst texture_binned
+        var ivContribData17 = [{
+            x: ['Q1', 'Q2', 'Q3', 'Q4', 'Q5'],
+            y: [0.5346549767069321, 0.21212234789305917, 0.004252259319913931, 0.13610847880618, 0.28734119576576256],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.5347', '0.2121', '0.0043', '0.1361', '0.2873'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout17 = {
+            title: 'IV Contribution for worst texture_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-17', ivContribData17, ivContribLayout17);
+        
+        // IV Contribution 차트 18 - mean texture_binned
+        var ivContribData18 = [{
+            x: ['Q1', 'Q2', 'Q4', 'Q5', 'Q3'],
+            y: [0.5346549767069321, 0.12506692427385835, 0.21158011150236872, 0.27857937104812136, 0.01097039772843266],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.5347', '0.1251', '0.2116', '0.2786', '0.0110'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout18 = {
+            title: 'IV Contribution for mean texture_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-18', ivContribData18, ivContribLayout18);
+        
+        // IV Contribution 차트 19 - worst smoothness_binned
+        var ivContribData19 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [0.3884277662083729, 0.03306127676453574, 0.07346994687962538, 0.053424491931456874, 0.37091082423998584],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.3884', '0.0331', '0.0735', '0.0534', '0.3709'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout19 = {
+            title: 'IV Contribution for worst smoothness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-19', ivContribData19, ivContribLayout19);
+        
+        // IV Contribution 차트 20 - worst symmetry_binned
+        var ivContribData20 = [{
+            x: ['Q5', 'Q3', 'Q1', 'Q4', 'Q2'],
+            y: [0.4344824247114017, 0.004074692705954683, 0.23372107850783036, 0.00842021457256098, 0.0786742234791962],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.4345', '0.0041', '0.2337', '0.0084', '0.0787'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout20 = {
+            title: 'IV Contribution for worst symmetry_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-20', ivContribData20, ivContribLayout20);
+        
+        // IV Contribution 차트 21 - compactness error_binned
+        var ivContribData21 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q1', 'Q3'],
+            y: [0.16146500044162557, 0.121087292969887, 0.14849808343765386, 0.28806950240997364, 0.00034748731360635996],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.1615', '0.1211', '0.1485', '0.2881', '0.0003'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout21 = {
+            title: 'IV Contribution for compactness error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-21', ivContribData21, ivContribLayout21);
+        
+        // IV Contribution 차트 22 - mean smoothness_binned
+        var ivContribData22 = [{
+            x: ['Q5', 'Q2', 'Q4', 'Q3', 'Q1'],
+            y: [0.2114795251589114, 0.04768668967948216, 0.03442143468437033, 0.0023597296260284076, 0.33881959370878023],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2115', '0.0477', '0.0344', '0.0024', '0.3388'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout22 = {
+            title: 'IV Contribution for mean smoothness_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-22', ivContribData22, ivContribLayout22);
+        
+        // IV Contribution 차트 23 - worst fractal dimension_binned
+        var ivContribData23 = [{
+            x: ['Q5', 'Q4', 'Q2', 'Q1', 'Q3'],
+            y: [0.3456975917951635, 0.003453148565505971, 0.07549489944377728, 0.06540062160565639, 0.024933539226662627],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.3457', '0.0035', '0.0755', '0.0654', '0.0249'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout23 = {
+            title: 'IV Contribution for worst fractal dimension_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-23', ivContribData23, ivContribLayout23);
+        
+        // IV Contribution 차트 24 - mean symmetry_binned
+        var ivContribData24 = [{
+            x: ['Q5', 'Q3', 'Q1', 'Q4', 'Q2'],
+            y: [0.2039294700976283, 0.00780260830462479, 0.15610813002680937, 0.015518568465356796, 0.11500714493173117],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2039', '0.0078', '0.1561', '0.0155', '0.1150'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout24 = {
+            title: 'IV Contribution for mean symmetry_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-24', ivContribData24, ivContribLayout24);
+        
+        // IV Contribution 차트 25 - fractal dimension error_binned
+        var ivContribData25 = [{
+            x: ['Q5', 'Q3', 'Q4', 'Q2', 'Q1'],
+            y: [0.036028013925371145, 2.9586649188543832e-06, 0.05691164151266496, 0.03306127676453574, 0.07549489944377728],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0360', '0.0000', '0.0569', '0.0331', '0.0755'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout25 = {
+            title: 'IV Contribution for fractal dimension error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-25', ivContribData25, ivContribLayout25);
+        
+        // IV Contribution 차트 26 - mean fractal dimension_binned
+        var ivContribData26 = [{
+            x: ['Q5', 'Q1', 'Q2', 'Q3', 'Q4'],
+            y: [0.015518568465356796, 0.07346994687962538, 0.07549489944377728, 0.00022857656260484647, 0.02683904307589593],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0155', '0.0735', '0.0755', '0.0002', '0.0268'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout26 = {
+            title: 'IV Contribution for mean fractal dimension_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-26', ivContribData26, ivContribLayout26);
+        
+        // IV Contribution 차트 27 - texture error_binned
+        var ivContribData27 = [{
+            x: ['Q2', 'Q1', 'Q3', 'Q4', 'Q5'],
+            y: [0.01985936057290148, 0.04000215023406234, 0.006688828236446812, 0.003453148565505971, 0.008714706893758388],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0199', '0.0400', '0.0067', '0.0035', '0.0087'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout27 = {
+            title: 'IV Contribution for texture error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-27', ivContribData27, ivContribLayout27);
+        
+        // IV Contribution 차트 28 - symmetry error_binned
+        var ivContribData28 = [{
+            x: ['Q5', 'Q1', 'Q4', 'Q3', 'Q2'],
+            y: [0.012268336293901626, 0.020695215251276274, 0.0006178858238899508, 0.01352362150678729, 0.00966498415372231],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0123', '0.0207', '0.0006', '0.0135', '0.0097'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout28 = {
+            title: 'IV Contribution for symmetry error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-28', ivContribData28, ivContribLayout28);
+        
+        // IV Contribution 차트 29 - smoothness error_binned
+        var ivContribData29 = [{
+            x: ['Q3', 'Q2', 'Q5', 'Q4', 'Q1'],
+            y: [0.006688828236446812, 0.00842021457256098, 0.02683904307589593, 6.366852014648124e-05, 6.366852014648124e-05],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.0067', '0.0084', '0.0268', '0.0001', '0.0001'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout29 = {
+            title: 'IV Contribution for smoothness error_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-29', ivContribData29, ivContribLayout29);
+        
+    </script>
+</body>
+</html>

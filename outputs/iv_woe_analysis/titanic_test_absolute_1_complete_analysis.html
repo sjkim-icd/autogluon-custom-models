@@ -1,0 +1,156 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TITANIC_TEST_ABSOLUTE_1 - Complete IV/WOE Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart-container { margin: 30px 0; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        h1, h2 { color: #333; }
+        .summary { background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>TITANIC_TEST_ABSOLUTE_1 - Complete IV/WOE Analysis</h1>
+    
+    <div class="summary">
+        <h2>📊 분석 요약</h2>
+        <p><strong>총 변수 수:</strong> 1개</p>
+        <p><strong>선택된 변수 수:</strong> 1개</p>
+        <p><strong>제거된 변수 수:</strong> 0개</p>
+        <p><strong>IV 임계값:</strong> 0.02</p>
+    </div>
+
+    <div class="chart-container">
+        <h2>📈 Information Value (IV) Comparison</h2>
+        <div id="iv-chart"></div>
+    </div>
+
+        <div class="chart-container">
+            <h2>🥧 IV Distribution (Selected Variables)</h2>
+            <div id="pie-chart"></div>
+        </div>
+    
+            <div class="chart-container">
+                <h2>📊 WOE Values for pclass_binned</h2>
+                <div id="woe-chart-0"></div>
+            </div>
+        
+            <div class="chart-container">
+                <h2>📈 IV Contribution for pclass_binned</h2>
+                <div id="iv-contrib-chart-0"></div>
+            </div>
+        
+    <script>
+        // IV 차트
+        var ivData = [{
+            x: ['pclass_binned'],
+            y: [0.4196161403305553],
+            type: 'bar',
+            marker: {
+                color: ['lightblue']
+            },
+            text: ['0.4196'],
+            textposition: 'outside'
+        }];
+        
+        var ivLayout = {
+            title: 'Information Value (IV) Comparison',
+            xaxis: {title: 'Variables'},
+            yaxis: {title: 'IV Value'},
+            height: 500,
+            width: 800,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 0.5,
+                y0: 0.02,
+                y1: 0.02,
+                line: {dash: 'dash', color: 'red', width: 2}
+            }],
+            annotations: [{
+                x: 0,
+                y: 0.02,
+                text: 'Threshold (0.02)',
+                showarrow: false,
+                yshift: 10
+            }]
+        };
+        
+        Plotly.newPlot('iv-chart', ivData, ivLayout);
+
+        // 파이 차트
+        var pieData = [{
+            labels: ['pclass_binned'],
+            values: [0.4196161403305553],
+            type: 'pie',
+            textinfo: 'label+percent+value'
+        }];
+        
+        var pieLayout = {
+            title: 'IV Distribution (Selected Variables)',
+            height: 500,
+            width: 600
+        };
+        
+        Plotly.newPlot('pie-chart', pieData, pieLayout);
+    
+        // WOE 차트 0 - pclass_binned
+        var woeData0 = [{
+            x: ['Bin1', 'Bin3', 'Bin5'],
+            y: [0.9673238298119193, 0.19771927872086248, -0.5894084338041359],
+            type: 'bar',
+            marker: {
+                color: ['lightgreen', 'lightgreen', 'lightcoral']
+            },
+            text: ['0.9673', '0.1977', '-0.5894'],
+            textposition: 'outside'
+        }];
+        
+        var woeLayout0 = {
+            title: 'WOE Values for pclass_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'WOE Value'},
+            height: 400,
+            width: 600,
+            showlegend: false,
+            shapes: [{
+                type: 'line',
+                x0: -0.5,
+                x1: 2.5,
+                y0: 0,
+                y1: 0,
+                line: {dash: 'dash', color: 'black', width: 1}
+            }]
+        };
+        
+        Plotly.newPlot('woe-chart-0', woeData0, woeLayout0);
+        
+        // IV Contribution 차트 0 - pclass_binned
+        var ivContribData0 = [{
+            x: ['Bin1', 'Bin3', 'Bin5'],
+            y: [0.2398580472932893, 0.008442051082294226, 0.17131604195497174],
+            type: 'bar',
+            marker: {
+                color: 'skyblue'
+            },
+            text: ['0.2399', '0.0084', '0.1713'],
+            textposition: 'outside'
+        }];
+        
+        var ivContribLayout0 = {
+            title: 'IV Contribution for pclass_binned',
+            xaxis: {title: 'Bins'},
+            yaxis: {title: 'IV Contribution'},
+            height: 400,
+            width: 600,
+            showlegend: false
+        };
+        
+        Plotly.newPlot('iv-contrib-chart-0', ivContribData0, ivContribLayout0);
+        
+    </script>
+</body>
+</html>
